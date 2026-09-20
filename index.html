@@ -4,6 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Transparansi Paguyuban</title>
+<link rel="preconnect" href="https://script.google.com">
+<link rel="preconnect" href="https://script.googleusercontent.com" crossorigin>
 <meta name="description" content="Laporan kas, pengadaan, dan penggunaan anggaran Paguyuban Warga secara terbuka.">
 <style>
 :root {
@@ -102,6 +104,11 @@ td.nw { white-space: nowrap; }
 tbody tr:hover td { background: color-mix(in srgb, var(--surface-2) 55%, transparent); }
 tfoot td { font-weight: 650; background: var(--surface-2); }
 .empty { padding: 26px; text-align: center; color: var(--muted); }
+.sk { display: grid; gap: 12px; padding: 4px 0; }
+.sk i { display: block; height: 16px; border-radius: 8px; background: linear-gradient(90deg, var(--surface-2) 25%, var(--surface) 45%, var(--surface-2) 65%); background-size: 300% 100%; animation: skm 1.2s linear infinite; }
+.sk i.t { height: 26px; width: 42%; } .sk i.b { height: 84px; border-radius: 12px; } .sk i.w { width: 70%; }
+@keyframes skm { from { background-position: 100% 0; } to { background-position: 0 0; } }
+@media (prefers-reduced-motion: reduce) { .sk i { animation: none; } }
 
 /* chips & meters */
 .chip { display: inline-flex; align-items: center; gap: 5px; padding: 2px 9px; border-radius: 99px; font-size: 12.5px; font-weight: 600; background: var(--surface-2); color: var(--text-2); white-space: nowrap; }
@@ -203,7 +210,7 @@ textarea { min-height: 84px; resize: vertical; }
    pulihkan API_URL di bawah dengan URL Web App Apps Script Anda
    (berakhiran /exec).
    ================================================================ */
-const API_URL = 'https://script.google.com/macros/s/AKfycbzRak9TruSnBDeggjhB3cKO-dH4KpA-0X91ReD2OvqdA4lj0TZ0EScFmXpzWFxnzytXMQ/exec';
+const API_URL = 'GANTI_DENGAN_URL_WEB_APP';
 
 /* ---------- util ---------- */
 const $ = (s, r) => (r || document).querySelector(s);
@@ -231,21 +238,102 @@ const simpanSesi = (s) => { SESI = s; try { if (s) sessionStorage.setItem('sikas
 /* ---------- API ---------- */
 let loading = 0;
 function loadBar(on) { const b = $('#loadbar'); loading += on ? 1 : -1; if (loading > 0) b.classList.add('on'); else { b.classList.remove('on'); b.style.width = '100%'; setTimeout(() => { b.style.width = '0'; }, 250); } }
-async function api(action, data, opt) {
-  opt = opt || {};
+/* ================================================================
+   TURBO - cache baca (stale-while-revalidate), batch & prefetch
+   ================================================================ */
+const READ = new Set(['publicData', 'laporanDetail', 'kkSaya', 'dashboardStaf', 'kkList', 'userList', 'tagihanStatus', 'tunggakanList', 'bayarList', 'konfirmasiList', 'rapbList', 'posList', 'pengadaanList', 'keluarList', 'pendapatanLainList', 'danaRTList', 'lpjList', 'pengumumanList', 'laporanPratinjau', 'pengaturanGet', 'auditList']);
+const FRESH_MS = 20000, STALE_MS = 15 * 60000, PUB_STALE_MS = 24 * 3600000;
+const CACHE = new Map(), INFLIGHT = new Map();
+let EPOCH = 0, PUB_KEY = '';
+const skeleton = () => '<div class="sk" role="status" aria-label="Memuat"><i class="t"></i><i class="b"></i><i></i><i class="w"></i><i class="b"></i></div>';
+const umum = (a) => a === 'publicData' || a === 'laporanDetail';
+const uid = () => (SESI && SESI.profil ? SESI.profil.tipe + ':' + SESI.profil.id : '-');
+const ckey = (a, d) => a + '|' + (umum(a) ? '' : uid() + '|') + JSON.stringify(d || {});
+// data publik disimpan di perangkat agar kunjungan berikutnya tampil seketika (hanya data publik, tidak pernah data pengurus/warga)
+const LS_PUB = 'sikas_pub_v2';
+try { const x = JSON.parse(localStorage.getItem(LS_PUB) || 'null'); if (x && x.k && x.j && Date.now() - x.t < PUB_STALE_MS) CACHE.set(x.k, { t: x.t, j: x.j }); } catch (e) { /* abaikan */ }
+function simpanPub(k, j) { if (k !== 'publicData|{}') return; try { localStorage.setItem(LS_PUB, JSON.stringify({ k: k, t: Date.now(), j: j })); } catch (e) { /* abaikan */ } }
+function bersihkanCache(termasukPublik) {
+  EPOCH++;
+  Array.from(CACHE.keys()).forEach((k) => { if (termasukPublik || !umum(k.split('|')[0])) CACHE.delete(k); });
+  if (termasukPublik) { try { localStorage.removeItem(LS_PUB); } catch (e) { /* abaikan */ } }
+}
+async function post(body, silent) {
   if (API_URL.indexOf('GANTI_') === 0) throw new Error('API_URL belum diatur di index.html. Isi dengan URL Web App Apps Script.');
-  const body = Object.assign({}, data || {}, { action: action, token: SESI ? SESI.token : undefined });
-  loadBar(true);
+  body.token = SESI ? SESI.token : undefined;
+  if (!silent) loadBar(true);
   try {
     const res = await fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(body), redirect: 'follow' });
     if (!res.ok) throw new Error('Server tidak merespons (' + res.status + ').');
     const j = await res.json();
-    if (!j.ok) { const e = new Error(j.error || 'Terjadi kesalahan.'); e.kode = j.kode; if (j.kode === 'AUTH') { simpanSesi(null); renderAkun(); setTimeout(route, 30); } throw e; }
+    if (!j.ok) { const e = new Error(j.error || 'Terjadi kesalahan.'); e.kode = j.kode; if (j.kode === 'AUTH' && !silent) { simpanSesi(null); bersihkanCache(false); renderAkun(); setTimeout(route, 30); } throw e; }
     return j.data;
   } catch (e) {
     if (e instanceof TypeError) throw new Error('Tidak dapat terhubung ke server. Periksa koneksi internet Anda.');
     throw e;
-  } finally { loadBar(false); }
+  } finally { if (!silent) loadBar(false); }
+}
+function ambilRead(action, data, k, silent) {
+  if (INFLIGHT.has(k)) return INFLIGHT.get(k);
+  const ep = EPOCH;
+  const p = post(Object.assign({}, data || {}, { action: action }), silent).then((v) => {
+    const j = JSON.stringify(v);
+    if (ep === EPOCH) { CACHE.set(k, { t: Date.now(), j: j }); simpanPub(k, j); }
+    return j;
+  }).finally(() => { INFLIGHT.delete(k); });
+  INFLIGHT.set(k, p);
+  return p;
+}
+function segarkanLatar(action, data, k, lama) {
+  if (INFLIGHT.has(k)) return;
+  const hash = location.hash;
+  ambilRead(action, data, k, true).then((j) => {
+    if (j === lama.j) return;
+    if (action === 'dashboardStaf') { try { DASH = JSON.parse(j); badges(); } catch (e) { /* abaikan */ } if (!/^#\/staf(\/beranda)?$/.test(hash)) return; }
+    if (action === 'publicData' && k === PUB_KEY) { try { PUB = JSON.parse(j); } catch (e) { /* abaikan */ } }
+    renderUlang(hash);
+  }).catch(() => { /* diam-diam: data lama tetap ditampilkan */ });
+}
+// gambar ulang halaman aktif hanya bila aman: halaman sama, tidak ada dialog terbuka, tidak sedang mengetik
+function renderUlang(hash) {
+  if (location.hash !== hash) return;
+  if ($('#modal .ov')) return;
+  const f = document.activeElement, app = $('#app');
+  if (f && app && app.contains(f) && /^(INPUT|TEXTAREA|SELECT)$/.test(f.tagName)) return;
+  const y = window.scrollY;
+  route();
+  setTimeout(() => window.scrollTo(0, y), 80);
+}
+async function api(action, data, opt) {
+  opt = opt || {};
+  if (API_URL.indexOf('GANTI_') === 0) throw new Error('API_URL belum diatur di index.html. Isi dengan URL Web App Apps Script.');
+  if (!READ.has(action)) {
+    try { return await post(Object.assign({}, data || {}, { action: action })); }
+    finally {
+      if (action === 'login' || action === 'logout' || action === 'gantiPin') bersihkanCache(false);
+      else if (action !== 'getBukti') { bersihkanCache(true); PUB = null; }
+    }
+  }
+  const k = ckey(action, data), e = CACHE.get(k), t = Date.now();
+  if (e && !opt.fresh) {
+    const umur = t - e.t;
+    if (umur < FRESH_MS) return JSON.parse(e.j);
+    if (umur < (action === 'publicData' ? PUB_STALE_MS : STALE_MS)) { segarkanLatar(action, data, k, e); return JSON.parse(e.j); }
+  }
+  return JSON.parse(await ambilRead(action, data, k, opt.silent));
+}
+// Ambil banyak data sekaligus dalam 1 panggilan jaringan lalu simpan di cache (dipakai setelah login & saat kursor menyentuh menu)
+async function prefetch(daftar) {
+  if (!SESI || API_URL.indexOf('GANTI_') === 0) return;
+  const perlu = []; const lihat = {};
+  daftar.forEach((x) => { const k = ckey(x[0], x[1]); if (lihat[k]) return; lihat[k] = 1; const e = CACHE.get(k); if (!READ.has(x[0]) || INFLIGHT.has(k) || (e && Date.now() - e.t < FRESH_MS)) return; perlu.push([x[0], x[1] || {}, k]); });
+  for (let i = 0; i < perlu.length; i += 8) {
+    const grup = perlu.slice(i, i + 8), ep = EPOCH;
+    try {
+      const hasil = await post({ action: 'batch', calls: grup.map((g) => ({ action: g[0], data: g[1] })) }, true);
+      hasil.forEach((r, n) => { if (r && r.ok && ep === EPOCH) CACHE.set(grup[n][2], { t: Date.now(), j: JSON.stringify(r.data) }); });
+    } catch (e) { return; }
+  }
 }
 function toast(msg, kind) { const t = el('<div class="toast ' + (kind || '') + '" role="status">' + esc(msg) + '</div>'); $('#toast').appendChild(t); setTimeout(() => t.remove(), kind === 'bad' ? 6500 : 3500); }
 const galat = (e) => toast(e.message || String(e), 'bad');
@@ -342,6 +430,7 @@ const posNama = (k) => { const p = PUB && PUB.pos.filter((x) => x.kode === k)[0]
 let PUB_ERR = null;
 
 async function muatPublik(tahun, periode) {
+  PUB_KEY = ckey('publicData', { tahun: tahun || undefined, periode: periode || undefined });
   PUB = await api('publicData', { tahun: tahun || undefined, periode: periode || undefined });
   $('#brandName').textContent = PUB.nama; document.title = 'Transparansi ' + PUB.nama;
   return PUB;
@@ -488,8 +577,9 @@ function laporanBody(l) {
     (l.catatan ? '<p class="t2"><b>Catatan Bendahara:</b> ' + esc(l.catatan) + '</p>' : '') + '</div>';
 }
 function cetak() { document.body.classList.add('cetak'); window.print(); setTimeout(() => document.body.classList.remove('cetak'), 500); }
-function bukaLaporan(periode) {
-  const l = PUB.laporan.filter((x) => x.periode === periode)[0]; if (!l) return;
+async function bukaLaporan(periode) {
+  if (!PUB.laporan.some((x) => x.periode === periode)) return;
+  let l; try { l = await api('laporanDetail', { periode: periode }); } catch (e) { return galat(e); }
   openModal({ title: 'Laporan kas ' + blnID(l.periode), wide: true, body: laporanBody(l), actions: [{ label: 'Cetak / simpan PDF', onClick: () => { cetak(); return false; } }, { label: 'Tutup', kind: 'pri', onClick: () => true }] });
 }
 function vPemeriksaan() {
@@ -502,7 +592,7 @@ const PUB_VIEW = { '': vRingkasan, pengumuman: vPengumuman, anggaran: vAnggaran,
 async function tampilPublik(seg) {
   const app = $('#app');
   if (!PUB) {
-    app.innerHTML = '<div class="empty">Memuat data...</div>';
+    app.innerHTML = skeleton();
     try { await muatPublik(); } catch (e) {
       app.innerHTML = '<div class="card loginbox"><h2>Data belum dapat dimuat</h2><p class="t2">' + esc(e.message) + '</p><button class="btn pri" id="ulang">Coba lagi</button></div>';
       $('#ulang').onclick = () => tampilPublik(seg); return;
@@ -512,7 +602,8 @@ async function tampilPublik(seg) {
   app.innerHTML = shellPublik(PUB_VIEW[seg] ? seg : '', fn());
   ikatPublik(app);
   if (!seg) ikatBagan(app, PUB.bulanan);
-  $$('[data-lap]', app).forEach((b) => { b.onclick = () => bukaLaporan(b.getAttribute('data-lap')); });
+  $$('[data-lap]', app).forEach((b) => { b.onclick = () => bukaLaporan(b.getAttribute('data-lap')); const pra = () => api('laporanDetail', { periode: b.getAttribute('data-lap') }, { silent: true }).catch(() => { /* abaikan */ }); b.onpointerenter = pra; b.ontouchstart = pra; });
+  if (seg === 'laporan' && PUB.laporan[0]) api('laporanDetail', { periode: PUB.laporan[0].periode }, { silent: true }).catch(() => { /* abaikan */ });
   ['fSt', 'fPos'].forEach((id) => { const x = $('#' + id, app); if (x) x.onchange = () => tampilPublik(seg); });
   const fq = $('#fQ', app); if (fq) fq.oninput = () => { const v = fq.value; clearTimeout(fq._t); fq._t = setTimeout(() => { tampilPublik(seg); const n = $('#fQ'); n.focus(); n.setSelectionRange(v.length, v.length); }, 250); };
 }
@@ -570,7 +661,7 @@ let WARGA = null;
 async function tampilWarga() {
   const app = $('#app');
   if (!SESI || SESI.profil.tipe !== 'kk') return loginView('kk', 'Portal Warga', 'Masuk untuk melihat tagihan IPL, riwayat pembayaran, dan mengirim bukti transfer.', 'contoh: RT01-001');
-  app.innerHTML = '<div class="empty">Memuat...</div>';
+  app.innerHTML = skeleton();
   try { WARGA = await api('kkSaya'); } catch (e) { if (e.kode === 'AUTH') return route(); app.innerHTML = '<div class="card loginbox"><p>' + esc(e.message) + '</p></div>'; return; }
   const W = WARGA, tg = W.tagihan, belum = tg.filter((t) => t.sisa > 0), tot = belum.reduce((a, t) => a + t.sisa, 0), nung = tg.filter((t) => t.status === 'Menunggak');
   if (W.profil.wajib_ganti_pin) gantiPinModal(true);
@@ -629,7 +720,7 @@ const V = {};
 const R = (...r) => !!SESI && r.indexOf(SESI.profil.role) >= 0;
 const hariIniLokal = () => new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 10);
 let DASH = null, DASHT = 0;
-async function getDash(force) { if (!force && DASH && Date.now() - DASHT < 30000) return DASH; DASH = await api('dashboardStaf'); DASHT = Date.now(); return DASH; }
+async function getDash(force) { DASH = await api('dashboardStaf', {}, force ? { fresh: true } : undefined); DASHT = Date.now(); return DASH; }
 function badges() {
   const m = {}; if (DASH) DASH.tugas.forEach((t) => { m[t.menu] = (m[t.menu] || 0) + t.jumlah; });
   $$('.side a').forEach((a) => { const b = $('.badge', a); if (b) b.remove(); const n = m[a.getAttribute('data-m')]; if (n) a.appendChild(el('<span class="badge" aria-label="' + n + ' tugas">' + n + '</span>')); });
@@ -654,18 +745,34 @@ async function tampilStaf(menu) {
   if (!$('#stafMain')) {
     app.innerHTML = '<div class="staff"><nav class="side no-print" aria-label="Menu pengurus">' + menuOk.map((m) => '<a href="#/staf/' + m[0] + '" data-m="' + m[0] + '">' + m[1] + '</a>').join('') + '</nav><div id="stafMain" style="min-width:0"></div></div>';
   }
+  ikatMenuTurbo();
   $$('.side a').forEach((a) => a.classList.toggle('on', a.getAttribute('data-m') === menu));
   const main = $('#stafMain'), root = el('<div></div>');
-  main.innerHTML = ''; main.appendChild(root); root.innerHTML = '<div class="empty">Memuat...</div>';
+  main.innerHTML = ''; main.appendChild(root); root.innerHTML = skeleton();
   try { await V[menu](root); } catch (e) { if (e.kode !== 'AUTH') root.innerHTML = '<div class="note bad"><span aria-hidden="true">!</span><div>' + esc(e.message) + '</div></div>'; return; }
   getDash().then(badges).catch(() => { /* abaikan */ });
+  setTimeout(prefetchStaf, 250);
+}
+// Turbo: muat data semua menu yang boleh dibuka peran ini dalam 1-2 panggilan, lalu pindah menu terasa instan
+let PREF_T = 0;
+function prefetchStaf(paksa) {
+  if (!SESI || SESI.profil.tipe !== 'user' || typeof PREF === 'undefined') return;
+  if (!paksa && Date.now() - PREF_T < 60000) return;
+  PREF_T = Date.now();
+  const role = SESI.profil.role;
+  let daftar = [];
+  STAF_MENU.filter((m) => !m[2] || m[2].indexOf(role) >= 0).forEach((m) => { if (PREF[m[0]]) daftar = daftar.concat(PREF[m[0]]()); });
+  prefetch(daftar);
+}
+function ikatMenuTurbo() {
+  $$('.side a').forEach((a) => { const pra = () => { const f = PREF[a.getAttribute('data-m')]; if (f) prefetch(f()); }; a.onpointerenter = pra; a.ontouchstart = pra; });
 }
 const judul = (t, sub, aksi) => '<div class="row" style="margin-bottom:12px"><div class="grow"><h1 style="font-size:22px">' + esc(t) + '</h1>' + (sub ? '<div class="t2 small">' + sub + '</div>' : '') + '</div>' + (aksi || '') + '</div>';
 const tabsHTML = (arr, aktif) => '<div class="tabs" style="margin-top:0">' + arr.map((t) => '<button class="tab' + (t[0] === aktif ? ' on' : '') + '" data-tab="' + t[0] + '">' + t[1] + '</button>').join('') + '</div>';
 
 /* ---------- beranda ---------- */
 V.beranda = async (root) => {
-  const d = await getDash(true), k = d.kpi, p = SESI.profil;
+  const d = await getDash(), k = d.kpi, p = SESI.profil;
   const tiles = p.role === 'ketua_rt'
     ? [['KK di ' + k.rt, k.kk, ''], ['Lunas bulan ini', k.lunas + ' KK', k.persen + '% dari nilai tagihan'], ['KK menunggak', k.tunggakan_kk, ''], ['Dana RT diterima tahun ini', rp(k.dana_diterima), '']]
     : [['Saldo kas', rp(k.saldo_kas), ''], ['IPL bulan ini', rp(k.ipl_bulan_ini), k.lunas + ' dari ' + k.kk + ' KK lunas (' + k.persen + '%)'], ['KK menunggak', k.tunggakan_kk, 'lewat jatuh tempo'], ['Peran Anda', PERAN[p.role] || p.role, p.jabatan || '']];
@@ -1036,13 +1143,33 @@ V.audit = async (root) => {
     tableHTML([{ h: 'Waktu', cls: 'nw', k: 'waktu' }, { h: 'Pelaku', k: 'pelaku' }, { h: 'Aksi', k: 'aksi' }, { h: 'Rincian', k: 'detail' }], l, { empty: 'Belum ada aktivitas.' });
 };
 
+/* Turbo: data yang dibutuhkan tiap menu (harus sama persis dengan panggilan di masing-masing halaman) */
+const PREF = {
+  beranda: () => [['dashboardStaf', {}]],
+  pembayaran: () => [['tagihanStatus', { periode: PB.periode || hariIniLokal().slice(0, 7) }], ['tunggakanList', {}]],
+  konfirmasi: () => [['konfirmasiList', { status: KF_STATUS }]],
+  kk: () => [['kkList', {}]],
+  rapb: () => [['rapbList', RB.tahun ? { tahun: RB.tahun } : {}], ['posList', {}]],
+  pengadaan: () => [['pengadaanList', PG_ST ? { status: PG_ST } : {}], ['posList', {}]],
+  pengeluaran: () => [['keluarList', {}], ['posList', {}], ['rapbList', {}]],
+  lain: () => [['pendapatanLainList', {}], ['posList', {}]],
+  danart: () => [['danaRTList', DR_TAHUN ? { tahun: DR_TAHUN } : {}]],
+  lpj: () => [['lpjList', {}]],
+  pengumuman: () => [['pengumumanList', {}]],
+  laporan: () => [['laporanPratinjau', { periode: LP_PER || (() => { const t = hariIniLokal(), y = Number(t.slice(0, 4)), m = Number(t.slice(5, 7)); return m === 1 ? (y - 1) + '-12' : y + '-' + ('0' + (m - 1)).slice(-2); })() }], ['publicData', {}]],
+  pemeriksaan: () => [['publicData', {}]],
+  pengguna: () => [['userList', {}]],
+  pengaturan: () => [['pengaturanGet', {}]],
+  audit: () => [['auditList', {}]]
+};
+
 /* ================================================================
    ROUTER & INISIALISASI
    ================================================================ */
 function route() {
   const seg = location.hash.replace(/^#\/?/, '').split('/');
   if (API_URL.indexOf('GANTI_') === 0) {
-    $('#app').innerHTML = '<div class="card loginbox" style="max-width:560px"><h2>Halaman belum terhubung ke Google Sheets</h2><p class="t2">Buka berkas <b>index.html</b>, cari baris <code>const API_URL</code> (sekitar baris 206), lalu ganti dengan URL Web App Apps Script Anda (berakhiran <code>/exec</code>). Ikuti panduan pemasangan langkah 6.</p></div>';
+    $('#app').innerHTML = '<div class="card loginbox" style="max-width:560px"><h2>Halaman belum terhubung ke Google Sheets</h2><p class="t2">Buka berkas <b>index.html</b>, cari baris <code>const API_URL</code> (sekitar baris 213), lalu ganti dengan URL Web App Apps Script Anda (berakhiran <code>/exec</code>). Ikuti panduan pemasangan langkah 6.</p></div>';
     return;
   }
   if ((seg[0] === 'staf' || seg[0] === 'warga') && !PUB) muatPublik().catch(() => { /* nama tetap default */ });
