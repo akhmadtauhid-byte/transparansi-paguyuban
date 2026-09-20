@@ -255,7 +255,7 @@ function loadBar(on) { const b = $('#loadbar'); loading += on ? 1 : -1; if (load
 /* ================================================================
    TURBO - cache baca (stale-while-revalidate), batch & prefetch
    ================================================================ */
-const READ = new Set(['publicData', 'laporanDetail', 'kkSaya', 'dashboardStaf', 'kkList', 'userList', 'tagihanStatus', 'tunggakanList', 'bayarList', 'konfirmasiList', 'rapbList', 'posList', 'pengadaanList', 'keluarList', 'pendapatanLainList', 'danaRTList', 'lpjList', 'pengumumanList', 'laporanPratinjau', 'pengaturanGet', 'auditList', 'peranList', 'izinMeta']);
+const READ = new Set(['publicData', 'laporanDetail', 'kkSaya', 'dashboardStaf', 'kkList', 'userList', 'tagihanStatus', 'tunggakanList', 'bayarList', 'konfirmasiList', 'rapbList', 'posList', 'pengadaanList', 'keluarList', 'pendapatanLainList', 'danaRTList', 'lpjList', 'pengumumanList', 'laporanPratinjau', 'pengaturanGet', 'auditList', 'peranList', 'izinMeta', 'pendataanList']);
 const FRESH_MS = 20000, STALE_MS = 15 * 60000, PUB_STALE_MS = 24 * 3600000;
 const CACHE = new Map(), INFLIGHT = new Map();
 let EPOCH = 0, PUB_KEY = '';
@@ -643,7 +643,7 @@ function loginView(tipe, judul, info, placeholder) {
     '<form id="fLogin" autocomplete="off"><label class="f" for="lgId">' + (tipe === 'kk' ? 'ID Keluarga (KK)' : 'Nama pengguna') + '</label><input type="text" id="lgId" placeholder="' + esc(placeholder) + '" autocapitalize="none" autocomplete="username" required>' +
     '<label class="f" for="lgPin">PIN 6 angka</label><input type="password" id="lgPin" inputmode="numeric" pattern="[0-9]*" maxlength="6" autocomplete="current-password" required>' +
     '<div class="err hide" id="lgErr" role="alert"></div><div style="margin-top:16px"><button class="btn pri" style="width:100%;justify-content:center" id="lgBtn" type="submit">Masuk</button></div></form>' +
-    '<p class="help" style="margin-top:14px">' + (tipe === 'kk' ? 'ID dan PIN tertera pada Kartu PIN yang dibagikan pengurus. Lupa PIN? Hubungi Sekretaris atau Ketua RT untuk direset.' : 'Akun pengurus dibuat oleh Admin Sistem.') + '</p></div>';
+    '<p class="help" style="margin-top:14px">' + (tipe === 'kk' ? 'ID dan PIN tertera pada Kartu PIN yang dibagikan pengurus. Lupa PIN? Hubungi Sekretaris atau Ketua RT untuk direset.' : 'Akun pengurus dibuat oleh Admin Sistem.') + '</p>' + (tipe === 'kk' ? '<p class="help" style="margin-top:6px">Belum terdaftar sebagai warga? <a href="#/daftar">Isi pendataan warga</a>.</p>' : '') + '</div>';
   $('#lgId').focus();
   $('#fLogin').onsubmit = async (ev) => {
     ev.preventDefault(); const b = $('#lgBtn'), er = $('#lgErr'); b.disabled = true; er.classList.add('hide');
@@ -723,11 +723,11 @@ function konfirmasiBayarModal(belum) {
 const KEU = ['admin', 'bendahara', 'ketua', 'sekretaris', 'dewas', 'ketua_rt'];
 // Menu yang tampil ditentukan oleh hak akses (kap) akun, bukan lagi oleh nama peran. Bawaan tiap peran & pengecualian diatur Admin di menu Pengguna.
 const STAF_MENU = [
-  ['beranda', 'Beranda'], ['pembayaran', 'Iuran & Tagihan'], ['konfirmasi', 'Konfirmasi Warga'], ['kk', 'Data Warga (KK)'], ['rapb', 'RAPB & Pos'], ['pengadaan', 'Pengadaan'],
+  ['beranda', 'Beranda'], ['pembayaran', 'Iuran & Tagihan'], ['konfirmasi', 'Konfirmasi Warga'], ['kk', 'Data Warga (KK)'], ['pendataan', 'Pendataan Warga'], ['rapb', 'RAPB & Pos'], ['pengadaan', 'Pengadaan'],
   ['pengeluaran', 'Pengeluaran'], ['lain', 'Pendapatan Lain'], ['danart', 'Dana RT'], ['lpj', 'LPJ RT'], ['pengumuman', 'Pengumuman'],
   ['laporan', 'Laporan Bulanan'], ['pemeriksaan', 'Pemeriksaan'], ['pengguna', 'Pengguna & Hak Akses'], ['pengaturan', 'Pengaturan'], ['audit', 'Jejak Audit']
 ];
-const MENU_KAP = { pembayaran: 'pembayaran.lihat', konfirmasi: 'konfirmasi.lihat', kk: 'kk.lihat', rapb: 'rapb.lihat', pengadaan: 'pengadaan.lihat', pengeluaran: 'pengeluaran.lihat', lain: 'lain.lihat', danart: 'danart.lihat', lpj: 'lpj.lihat', pengumuman: 'pengumuman.lihat', laporan: 'laporan.lihat', pemeriksaan: 'pemeriksaan.catat', audit: 'audit.lihat', pengguna: 'pengguna.kelola', pengaturan: 'pengaturan.kelola' };
+const MENU_KAP = { pembayaran: 'pembayaran.lihat', konfirmasi: 'konfirmasi.lihat', kk: 'kk.lihat', pendataan: 'pendataan.lihat', rapb: 'rapb.lihat', pengadaan: 'pengadaan.lihat', pengeluaran: 'pengeluaran.lihat', lain: 'lain.lihat', danart: 'danart.lihat', lpj: 'lpj.lihat', pengumuman: 'pengumuman.lihat', laporan: 'laporan.lihat', pemeriksaan: 'pemeriksaan.catat', audit: 'audit.lihat', pengguna: 'pengguna.kelola', pengaturan: 'pengaturan.kelola' };
 const Bisa = (id) => !!SESI && !!SESI.profil && Array.isArray(SESI.profil.kap) && SESI.profil.kap.indexOf(id) >= 0;
 const menuBoleh = (m) => m[0] === 'beranda' || Bisa(MENU_KAP[m[0]]);
 let MENU_AKTIF = 'beranda';
@@ -1233,6 +1233,94 @@ V.pengguna = async (root) => {
 };
 let UG_TAB = 'akun';
 
+/* ---------- pendataan warga: sisi pengurus ---------- */
+let PD_ST = 'Menunggu';
+function tautanDaftar() { return location.href.split('#')[0] + '#/daftar'; }
+function kartuPinWaModal(x) {
+  const hp = String(x.no_hp || '').replace(/^0/, '62');
+  const teks = 'Yth. ' + x.nama_kepala + ', pendaftaran warga Anda telah disetujui.\nID Keluarga: ' + x.id_kk + '\nPIN sementara: ' + x.pin + '\nMasuk di menu Portal Warga pada halaman SIKAS, lalu ganti PIN Anda. Jangan bagikan PIN kepada siapa pun.';
+  openModal({ title: 'Pendaftaran disetujui', body: '<div class="note warn" style="margin:12px 0"><span aria-hidden="true">!</span><div>PIN hanya ditampilkan sekali. Serahkan langsung atau kirim lewat pesan pribadi ke nomor warga, jangan lewat grup.</div></div><div class="kartu" id="cetakArea"><b>' + esc(x.nama_kepala) + '</b><div class="small t2">' + esc(x.alamat) + ' &middot; ' + esc(x.rt) + '</div><div style="margin-top:6px">ID: <b class="num">' + esc(x.id_kk) + '</b><br>PIN: <b class="num" style="font-size:20px;letter-spacing:.1em">' + esc(x.pin) + '</b></div><div class="small muted" style="margin-top:4px">Masuk di halaman Portal Warga</div></div>', actions: [{ label: 'Kirim lewat WhatsApp', onClick: () => { window.open('https://wa.me/' + hp + '?text=' + encodeURIComponent(teks), '_blank', 'noopener'); return false; } }, { label: 'Cetak', onClick: () => { cetak(); return false; } }, { label: 'Selesai', kind: 'pri', onClick: () => true }] });
+}
+V.pendataan = async (root) => {
+  const [l, info] = await Promise.all([api('pendataanList', {}), api('pendataanInfo', {})]);
+  const proses = Bisa('pendataan.proses'), n = (s) => l.filter((x) => x.status === s).length;
+  const daftarTab = [['Menunggu', 'Menunggu (' + n('Menunggu') + ')'], ['Disetujui', 'Disetujui'], ['Ditolak', 'Ditolak'], ['', 'Semua']];
+  const rows = l.filter((x) => !PD_ST || x.status === PD_ST);
+  root.innerHTML = judul('Pendataan warga', 'Warga mengisi formulir dari tautan yang dibagikan di grup. Data masuk antrean ini; KK dibuat setelah disetujui.', '<button class="btn pri" id="pdBagi">Bagikan tautan</button>') +
+    '<div class="note ' + (info.buka ? 'good' : 'warn') + '" style="margin-bottom:12px"><span aria-hidden="true">' + (info.buka ? '✓' : '!') + '</span><div>Formulir pendataan <b>' + (info.buka ? 'sedang dibuka' : 'sedang ditutup') + '</b>. ' + (info.buka ? 'Admin dapat menutupnya di Pengaturan.' : 'Warga tidak dapat mengirim data. Admin dapat membukanya di Pengaturan.') + '</div></div>' +
+    '<div class="tabs" style="margin-top:0">' + daftarTab.map((t) => '<button class="tab' + (t[0] === PD_ST ? ' on' : '') + '" data-tab="' + t[0] + '">' + t[1] + '</button>').join('') + '</div>' +
+    tableHTML([{ h: 'Dikirim', cls: 'nw', f: (r) => tglID(r.tgl_kirim) }, { h: 'RT', k: 'rt', cls: 'nw' }, { h: 'Nama kepala keluarga', f: (r) => esc(r.nama_kepala) + (r.catatan ? '<div class="small muted">' + esc(r.catatan) + '</div>' : '') }, { h: 'Alamat', k: 'alamat' }, { h: 'Hunian', cls: 'kol-sm', k: 'status_hunian' }, { h: 'HP', cls: 'kol-sm', k: 'no_hp' }, { h: 'Status', f: (r) => chip(r.status) + (r.id_kk ? '<div class="small muted">' + esc(r.id_kk) + '</div>' : '') + (r.status === 'Ditolak' && r.catatan_proses ? '<div class="small muted">' + esc(r.catatan_proses) + '</div>' : '') }, { h: '', f: (r) => (proses && r.status === 'Menunggu' ? '<button class="btn sm pri" data-pd="' + esc(r.id_daftar) + '">Periksa</button>' : '') }], rows, { empty: PD_ST === 'Menunggu' ? 'Tidak ada pendaftaran yang menunggu.' : 'Belum ada data.' });
+  $$('[data-tab]', root).forEach((b) => { b.onclick = () => { PD_ST = b.getAttribute('data-tab'); V.pendataan(root); }; });
+  $('#pdBagi', root).onclick = () => {
+    const link = tautanDaftar(), nm = (typeof PUB !== 'undefined' && PUB && PUB.nama) || 'paguyuban';
+    const teks = 'Yth. Bapak/Ibu warga ' + nm + '.\nMohon melengkapi pendataan warga (sekitar 2 menit) melalui tautan berikut:\n' + link + '\n\nSiapkan: RT, alamat/blok rumah, nama kepala keluarga, status hunian, dan nomor WhatsApp aktif. Data hanya dipakai untuk administrasi paguyuban dan tidak ditampilkan di halaman publik. Setelah diperiksa pengurus, Kartu PIN Portal Warga diserahkan langsung.\nTerima kasih.';
+    openModal({ title: 'Bagikan formulir pendataan', body: '<p class="t2 small" style="margin:0 0 8px">Kirim tautan ini ke grup WhatsApp warga.</p><div class="kartu" style="word-break:break-all"><b>' + esc(link) + '</b></div><label class="f" style="margin-top:12px">Contoh pesan</label><textarea readonly rows="8" style="width:100%">' + esc(teks) + '</textarea>', actions: [{ label: 'Salin tautan', onClick: () => { salinTeks(link); return false; } }, { label: 'Salin pesan', onClick: () => { salinTeks(teks); return false; } }, { label: 'Buka WhatsApp', onClick: () => { window.open('https://wa.me/?text=' + encodeURIComponent(teks), '_blank', 'noopener'); return false; } }, { label: 'Selesai', kind: 'pri', onClick: () => true }] });
+  };
+  $$('[data-pd]', root).forEach((b) => {
+    b.onclick = () => {
+      const p = l.filter((x) => x.id_daftar === b.getAttribute('data-pd'))[0];
+      const fs = [{ name: 'rt', label: 'RT', value: p.rt, required: true, max: 10 }, { name: 'alamat', label: 'Alamat / blok', value: p.alamat, required: true, max: 80 }, { name: 'nama_kepala', label: 'Nama kepala keluarga', value: p.nama_kepala, required: true, max: 80 }, { name: 'status_hunian', label: 'Status hunian', type: 'select', options: ['Pemilik', 'Penghuni'], value: p.status_hunian }, { name: 'no_hp', label: 'No. HP / WhatsApp', value: p.no_hp, max: 20 }, { name: 'tarif_ipl', label: 'Tarif IPL khusus (Rp)', hint: '(kosongkan bila standar)', type: 'number' }, { name: 'mulai_iuran', label: 'Mulai iuran (bulan)', type: 'month', value: hariIniLokal().slice(0, 7) }];
+      const wrap = el('<div><p class="t2 small" style="margin:0 0 6px">Dikirim ' + tglID(p.tgl_kirim) + '. Periksa dan koreksi bila perlu, lalu setujui.' + (p.catatan ? ' Catatan warga: <b>' + esc(p.catatan) + '</b>.' : '') + '</p>' + fieldsHTML(fs) + '</div>');
+      openModal({
+        title: 'Periksa pendaftaran', body: wrap, actions: [
+          { label: 'Batal', onClick: () => true },
+          { label: 'Tolak', kind: 'bad', keep: true, onClick: () => { formModal({ title: 'Tolak pendaftaran', intro: esc(p.nama_kepala) + ' &middot; ' + esc(p.alamat), fields: [{ name: 'catatan', label: 'Alasan penolakan', type: 'textarea', required: true, max: 200, help: 'Alasan ini dapat dibaca warga saat memeriksa status.' }], submit: 'Tolak', onSubmit: async (v) => { await api('pendataanTolak', { id_daftar: p.id_daftar, catatan: v.catatan }); DASHT = 0; toast('Pendaftaran ditolak.', 'good'); V.pendataan(root); } }); return false; } },
+          { label: 'Setujui & buat KK', kind: 'pri', onClick: async (m) => { const v = readForm(m, fs); const r = await api('pendataanTerima', { id_daftar: p.id_daftar, data: v }); DASHT = 0; V.pendataan(root); setTimeout(() => kartuPinWaModal(r), 60); } }
+        ]
+      });
+    };
+  });
+};
+
+/* ---------- pendataan warga: formulir publik (#/daftar) ---------- */
+let DF_TAB = 'isi';
+async function tampilDaftar() {
+  const app = $('#app'); app.innerHTML = skeleton();
+  let info;
+  try { info = await api('pendataanInfo', {}); } catch (e) { app.innerHTML = '<div class="card loginbox"><h2>Formulir belum dapat dimuat</h2><p class="t2">' + esc(e.message) + '</p><button class="btn pri" id="ulang">Coba lagi</button></div>'; $('#ulang').onclick = tampilDaftar; return; }
+  const judulH = '<h2>Pendataan warga</h2><p class="sub">' + esc(info.nama || '') + '</p>';
+  const tabs = '<div class="tabs" style="margin-top:0">' + [['isi', 'Isi data'], ['cek', 'Cek status']].map((t) => '<button class="tab' + (t[0] === DF_TAB ? ' on' : '') + '" data-tab="' + t[0] + '">' + t[1] + '</button>').join('') + '</div>';
+  const pasang = () => { $$('[data-tab]', app).forEach((b) => { b.onclick = () => { DF_TAB = b.getAttribute('data-tab'); tampilDaftar(); }; }); };
+  if (DF_TAB === 'cek') {
+    const fs = [{ name: 'id_daftar', label: 'Nomor pendaftaran', required: true, max: 30, placeholder: 'DFT...' }, { name: 'no_hp', label: 'Nomor HP yang didaftarkan', type: 'tel', required: true, max: 20, placeholder: '0812...' }];
+    app.innerHTML = '<div class="card loginbox" style="max-width:560px">' + judulH + tabs + '<p class="t2 small">Masukkan nomor pendaftaran yang muncul setelah Anda mengirim data.</p><form id="fCek">' + fieldsHTML(fs) + '<div class="err hide" id="dfErr" role="alert"></div><div id="dfHasil"></div><div style="margin-top:16px"><button class="btn pri" style="width:100%;justify-content:center" type="submit" id="dfBtn">Periksa status</button></div></form></div>';
+    pasang();
+    $('#fCek').onsubmit = async (ev) => {
+      ev.preventDefault(); const er = $('#dfErr'), b = $('#dfBtn'); er.classList.add('hide'); $('#dfHasil').innerHTML = ''; b.disabled = true;
+      try {
+        const v = readForm($('#fCek'), fs), r = await api('pendataanCek', { id_daftar: v.id_daftar, no_hp: v.no_hp });
+        const ket = r.status === 'Menunggu' ? 'Data Anda sudah diterima dan sedang menunggu diperiksa pengurus.' : (r.status === 'Disetujui' ? 'Pendaftaran disetujui. ID Keluarga Anda: <b>' + esc(r.id_kk) + '</b>. Kartu PIN diserahkan langsung oleh pengurus; hubungi Sekretaris atau Ketua RT bila belum menerimanya.' : 'Pendaftaran belum dapat disetujui. Alasan: <b>' + esc(r.catatan_proses || '-') + '</b>. Silakan hubungi Sekretaris atau Ketua RT.');
+        $('#dfHasil').innerHTML = '<div class="note ' + (r.status === 'Disetujui' ? 'good' : (r.status === 'Ditolak' ? 'bad' : 'warn')) + '" style="margin-top:12px"><span aria-hidden="true">' + (r.status === 'Disetujui' ? '✓' : '!') + '</span><div><b>' + esc(r.status) + '</b><br>' + ket + '</div></div>';
+      } catch (e) { er.textContent = e.message; er.classList.remove('hide'); } finally { b.disabled = false; }
+    };
+    return;
+  }
+  if (!info.buka) { app.innerHTML = '<div class="card loginbox" style="max-width:560px">' + judulH + tabs + '<div class="note warn"><span aria-hidden="true">!</span><div>Pendataan warga sedang ditutup. Silakan hubungi pengurus.</div></div></div>'; pasang(); return; }
+  const fs = [
+    { name: 'rt', label: 'RT', type: 'select', options: [{ v: '', l: 'Pilih RT' }].concat(info.rt.map((r) => ({ v: r, l: r }))), required: true },
+    { name: 'alamat', label: 'Alamat / blok rumah', required: true, max: 80, placeholder: 'Contoh: Blok A No. 5' },
+    { name: 'nama_kepala', label: 'Nama kepala keluarga', required: true, max: 80 },
+    { name: 'status_hunian', label: 'Status hunian', type: 'select', options: [{ v: '', l: 'Pilih status' }, { v: 'Pemilik', l: 'Pemilik (rumah sendiri)' }, { v: 'Penghuni', l: 'Penghuni (kontrak/sewa/lainnya)' }], required: true },
+    { name: 'no_hp', label: 'Nomor HP / WhatsApp aktif', type: 'tel', required: true, max: 20, placeholder: '081234567890', help: 'Dipakai pengurus untuk menghubungi Anda.' },
+    { name: 'catatan', label: 'Catatan', hint: '(opsional)', type: 'textarea', max: 200 }
+  ];
+  app.innerHTML = '<div class="card loginbox" style="max-width:560px">' + judulH + tabs + '<p class="t2 small">Isi data dengan benar, sekitar 2 menit. Data diperiksa pengurus sebelum Anda terdaftar.</p><form id="fDaftar" autocomplete="off">' + fieldsHTML(fs) +
+    '<div style="position:absolute;left:-9999px" aria-hidden="true"><label>Situs web<input type="text" name="website" tabindex="-1" autocomplete="off"></label></div>' +
+    '<div class="chk" style="margin-top:12px;align-items:flex-start"><input type="checkbox" id="dfSetuju" name="setuju"><label for="dfSetuju">Saya menyatakan data ini benar dan bersedia datanya dipakai untuk administrasi paguyuban. Data tidak ditampilkan di halaman publik.</label></div>' +
+    '<div class="err hide" id="dfErr" role="alert"></div><div style="margin-top:16px"><button class="btn pri" style="width:100%;justify-content:center" type="submit" id="dfBtn">Kirim data</button></div></form></div>';
+  pasang();
+  $('#fDaftar').onsubmit = async (ev) => {
+    ev.preventDefault(); const er = $('#dfErr'), b = $('#dfBtn'); er.classList.add('hide'); b.disabled = true;
+    try {
+      const v = readForm($('#fDaftar'), fs); v.setuju = $('#dfSetuju').checked; v.website = $('[name="website"]').value;
+      if (!v.setuju) throw new Error('Centang pernyataan persetujuan terlebih dahulu.');
+      const r = await api('pendataanKirim', { data: v });
+      $('#app').innerHTML = '<div class="card loginbox" style="max-width:560px"><h2>Terima kasih</h2><p class="sub">' + esc(info.nama || '') + '</p><div class="note good"><span aria-hidden="true">✓</span><div>Data Anda sudah terkirim dan akan diperiksa pengurus.</div></div><div class="kartu" style="margin-top:12px">Nomor pendaftaran<br><b class="num" style="font-size:20px">' + esc(r.id_daftar) + '</b></div><p class="help">Catat atau ambil tangkapan layar nomor ini. Setelah disetujui, Kartu PIN Portal Warga diserahkan langsung oleh pengurus. Anda dapat memeriksa status di tab "Cek status".</p><button class="btn" id="dfLagi" style="margin-top:8px">Isi untuk keluarga lain</button></div>';
+      $('#dfLagi').onclick = tampilDaftar;
+    } catch (e) { er.textContent = e.message; er.classList.remove('hide'); b.disabled = false; }
+  };
+}
+
 const PENGATURAN_INFO = [
   ['NAMA_PAGUYUBAN', 'Nama paguyuban', 'text'], ['ALAMAT', 'Alamat sekretariat', 'text'], ['TAHUN_ANGGARAN', 'Tahun anggaran berjalan', 'number'],
   ['TARIF_IPL_DEFAULT', 'Tarif IPL standar per KK per bulan (Rp)', 'number'], ['JATUH_TEMPO_TGL', 'Tanggal jatuh tempo tiap bulan (1-28)', 'number'],
@@ -1241,7 +1329,8 @@ const PENGATURAN_INFO = [
   ['BATAS_T1_PERSEN', 'Batas Tingkat 1 (% dari total RAPB)', 'number'], ['BATAS_T2_PERSEN', 'Batas Tingkat 2 (%)', 'number'], ['BATAS_T3_PERSEN', 'Batas Tingkat 3 (%)', 'number'],
   ['MIN_PENAWARAN', 'Minimal jumlah penawaran (Tingkat 2 ke atas)', 'number'], ['TOLERANSI_NILAI_FINAL', 'Toleransi nilai beli terhadap perkiraan (%)', 'number'],
   ['DANA_RT_DASAR_PERSEN', 'Dana RT: porsi dibagi rata (%)', 'number'], ['DANA_RT_PROP_PERSEN', 'Dana RT: porsi menurut jumlah KK (%)', 'number', 'Bersama porsi dibagi rata harus berjumlah 100.'],
-  ['TAMPILKAN_VENDOR', 'Tampilkan nama penerima/penyedia di halaman publik', 'select']
+  ['TAMPILKAN_VENDOR', 'Tampilkan nama penerima/penyedia di halaman publik', 'select'],
+  ['PENDATAAN_BUKA', 'Formulir pendataan warga (tautan #/daftar) dibuka', 'select', 'Pilih Tidak untuk menutup formulir sementara.']
 ];
 V.pengaturan = async (root) => {
   const c = await api('pengaturanGet', {});
@@ -1265,6 +1354,7 @@ const PREF = {
   pembayaran: () => [['tagihanStatus', { periode: PB.periode || hariIniLokal().slice(0, 7) }], ['tunggakanList', {}]],
   konfirmasi: () => [['konfirmasiList', { status: KF_STATUS }]],
   kk: () => [['kkList', {}]],
+  pendataan: () => [['pendataanList', {}]],
   rapb: () => [['rapbList', RB.tahun ? { tahun: RB.tahun } : {}], ['posList', {}]],
   pengadaan: () => [['pengadaanList', PG_ST ? { status: PG_ST } : {}], ['posList', {}]],
   pengeluaran: () => [['keluarList', {}], ['posList', {}], ['rapbList', {}]],
@@ -1290,7 +1380,8 @@ function route() {
   }
   document.body.classList.toggle('lebar', seg[0] === 'staf' && !!SESI && SESI.profil.tipe === 'user');
   if ((seg[0] === 'staf' || seg[0] === 'warga') && !PUB) muatPublik().catch(() => { /* nama tetap default */ });
-  if (seg[0] === 'staf') tampilStaf(seg[1]);
+  if (seg[0] === 'daftar') tampilDaftar();
+  else if (seg[0] === 'staf') tampilStaf(seg[1]);
   else if (seg[0] === 'warga') tampilWarga();
   else tampilPublik(seg[0] || '');
 }
