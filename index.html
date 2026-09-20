@@ -101,6 +101,10 @@ td { padding: 9px 12px; border-bottom: 1px solid var(--line); vertical-align: to
 tr:last-child td { border-bottom: 0; }
 td.r, th.r { text-align: right; } td.c, th.c { text-align: center; }
 td.nw { white-space: nowrap; }
+.tbl-wrap th.aksi, .tbl-wrap td.aksi { position: sticky; right: 0; background: var(--surface); box-shadow: -10px 0 10px -10px rgba(0,0,0,.2); }
+.tbl-wrap th.aksi { background: var(--surface-2); }
+.lebar .wrap { max-width: 1440px; }
+@media (max-width: 560px) { .kol-sm { display: none; } .hanya-sm { display: block !important; } .aksi-v { flex-direction: column; align-items: stretch; } .tbl-wrap th, .tbl-wrap td { padding: 8px 7px; } .tbl-wrap table { font-size: 13px; } .tbl-wrap .chip { white-space: nowrap; font-size: 12px; } }
 tbody tr:hover td { background: color-mix(in srgb, var(--surface-2) 55%, transparent); }
 tfoot td { font-weight: 650; background: var(--surface-2); }
 .empty { padding: 26px; text-align: center; color: var(--muted); }
@@ -188,6 +192,16 @@ textarea { min-height: 84px; resize: vertical; }
   .ov { position: static; background: none; padding: 0; } .mdl { box-shadow: none; border: 0; max-width: none; } .mdl footer, .x { display: none; }
   .card, .tbl-wrap { box-shadow: none; }
 }
+/* editor hak akses */
+.hanya-sm { display: none; }
+.izin-g { border: 1px solid var(--line); border-radius: 12px; padding: 10px 14px 6px; margin: 10px 0; background: var(--surface); }
+.izin-g h3 { font-size: 14.5px; margin: 0 0 4px; display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap; }
+.izin-r { display: flex; gap: 10px; align-items: flex-start; padding: 6px 0; font-size: 14px; border-top: 1px solid var(--line); }
+.izin-r:first-of-type { border-top: 0; }
+.izin-r input { width: 18px; height: 18px; margin-top: 2px; flex: none; }
+.izin-r .tx { flex: 1; min-width: 0; } .izin-r .tx small { display: block; color: var(--muted); font-size: 12px; }
+.izin-r.off .tx { color: var(--muted); }
+.izin-bar { position: sticky; top: -14px; z-index: 2; background: var(--surface); padding: 8px 0; border-bottom: 1px solid var(--line); font-size: 13px; color: var(--text-2); }
 </style>
 </head>
 <body>
@@ -241,7 +255,7 @@ function loadBar(on) { const b = $('#loadbar'); loading += on ? 1 : -1; if (load
 /* ================================================================
    TURBO - cache baca (stale-while-revalidate), batch & prefetch
    ================================================================ */
-const READ = new Set(['publicData', 'laporanDetail', 'kkSaya', 'dashboardStaf', 'kkList', 'userList', 'tagihanStatus', 'tunggakanList', 'bayarList', 'konfirmasiList', 'rapbList', 'posList', 'pengadaanList', 'keluarList', 'pendapatanLainList', 'danaRTList', 'lpjList', 'pengumumanList', 'laporanPratinjau', 'pengaturanGet', 'auditList']);
+const READ = new Set(['publicData', 'laporanDetail', 'kkSaya', 'dashboardStaf', 'kkList', 'userList', 'tagihanStatus', 'tunggakanList', 'bayarList', 'konfirmasiList', 'rapbList', 'posList', 'pengadaanList', 'keluarList', 'pendapatanLainList', 'danaRTList', 'lpjList', 'pengumumanList', 'laporanPratinjau', 'pengaturanGet', 'auditList', 'peranList', 'izinMeta']);
 const FRESH_MS = 20000, STALE_MS = 15 * 60000, PUB_STALE_MS = 24 * 3600000;
 const CACHE = new Map(), INFLIGHT = new Map();
 let EPOCH = 0, PUB_KEY = '';
@@ -397,7 +411,7 @@ async function foto(file) {
 function tableHTML(cols, rows, o) {
   o = o || {};
   if (!rows.length) return '<div class="tbl-wrap"><div class="empty">' + esc(o.empty || 'Belum ada data.') + '</div></div>';
-  return '<div class="tbl-wrap"><table><thead><tr>' + cols.map((c) => '<th class="' + (c.cls || '') + '">' + esc(c.h) + '</th>').join('') + '</tr></thead><tbody>' + rows.map((r, i) => '<tr>' + cols.map((c) => '<td class="' + (c.cls || '') + '">' + (c.f ? c.f(r, i) : esc(r[c.k])) + '</td>').join('') + '</tr>').join('') + '</tbody>' + (o.foot ? '<tfoot><tr>' + o.foot + '</tr></tfoot>' : '') + '</table></div>';
+  return '<div class="tbl-wrap"><table><thead><tr>' + cols.map((c) => '<th class="' + (c.cls || '') + (c.h === '' ? ' aksi' : '') + '">' + esc(c.h) + '</th>').join('') + '</tr></thead><tbody>' + rows.map((r, i) => '<tr>' + cols.map((c) => '<td class="' + (c.cls || '') + (c.h === '' ? ' aksi' : '') + '">' + (c.f ? c.f(r, i) : esc(r[c.k])) + '</td>').join('') + '</tr>').join('') + '</tbody>' + (o.foot ? '<tfoot><tr>' + o.foot + '</tr></tfoot>' : '') + '</table></div>';
 }
 function csvUnduh(nama, header, rows) {
   const q = (v) => '"' + String(v === undefined || v === null ? '' : v).replace(/"/g, '""') + '"';
@@ -672,9 +686,9 @@ async function tampilWarga() {
     '<div class="grid g3" style="margin-top:14px"><div class="card stat"><div class="lbl">Total belum dibayar</div><div class="val num">' + rp(tot) + '</div><div class="note">' + belum.length + ' bulan tagihan' + (nung.length ? ', ' + nung.length + ' bulan lewat jatuh tempo' : '') + '</div></div>' +
     '<div class="card"><h2>Cara membayar</h2><p class="t2" style="margin:4px 0 8px">' + esc(W.rekening) + '</p><div class="small muted">' + esc(W.kontak) + '</div></div>' +
     '<div class="card"><h2>Sudah transfer?</h2><p class="t2" style="margin:4px 0 10px">Kirim foto bukti transfer agar Bendahara dapat memverifikasi.</p><button class="btn pri" id="btnKonf"' + (belum.length ? '' : ' disabled') + '>Kirim bukti pembayaran</button></div></div>' +
-    '<h2 class="sec">Tagihan IPL</h2>' + tableHTML([{ h: 'Bulan', f: (r) => blnID(r.periode) }, { h: 'Tagihan', cls: 'r num', f: (r) => rp(r.nominal) }, { h: 'Dibayar', cls: 'r num', f: (r) => rp(r.dibayar) }, { h: 'Sisa', cls: 'r num', f: (r) => rp(r.sisa) }, { h: 'Jatuh tempo', cls: 'nw', f: (r) => tglID(r.jatuh_tempo) }, { h: 'Status', f: (r) => chip(r.status) }], tg, { empty: 'Belum ada tagihan untuk keluarga Anda.' }) +
-    (W.konfirmasi.length ? '<h2 class="sec">Bukti pembayaran yang saya kirim</h2>' + tableHTML([{ h: 'Dikirim', cls: 'nw', f: (r) => tglID(r.tgl_kirim) }, { h: 'Untuk bulan', f: (r) => esc(r.periode.split(',').map(blnID).join(', ')) }, { h: 'Jumlah', cls: 'r num', f: (r) => rp(r.jumlah) }, { h: 'Status', f: (r) => chip(r.status) }, { h: 'Catatan', k: 'catatan_proses' }], W.konfirmasi) : '') +
-    '<h2 class="sec">Riwayat pembayaran</h2>' + tableHTML([{ h: 'Tanggal', cls: 'nw', f: (r) => tglID(r.tanggal) }, { h: 'Untuk bulan', f: (r) => blnID(r.periode) }, { h: 'Jumlah', cls: 'r num', f: (r) => rp(r.jumlah) }, { h: 'Metode', k: 'metode' }, { h: 'Status', f: (r) => chip(r.status) }], W.riwayat, { empty: 'Belum ada pembayaran tercatat.' }) +
+    '<h2 class="sec">Tagihan IPL</h2>' + tableHTML([{ h: 'Bulan', f: (r) => blnID(r.periode) }, { h: 'Tagihan', cls: 'r num kol-sm', f: (r) => rp(r.nominal) }, { h: 'Dibayar', cls: 'r num kol-sm', f: (r) => rp(r.dibayar) }, { h: 'Sisa', cls: 'r num', f: (r) => rp(r.sisa) }, { h: 'Jatuh tempo', cls: 'nw kol-sm', f: (r) => tglID(r.jatuh_tempo) }, { h: 'Status', f: (r) => chip(r.status) }], tg, { empty: 'Belum ada tagihan untuk keluarga Anda.' }) +
+    (W.konfirmasi.length ? '<h2 class="sec">Bukti pembayaran yang saya kirim</h2>' + tableHTML([{ h: 'Dikirim', cls: 'nw kol-sm', f: (r) => tglID(r.tgl_kirim) }, { h: 'Untuk bulan', f: (r) => esc(r.periode.split(',').map(blnID).join(', ')) }, { h: 'Jumlah', cls: 'r num', f: (r) => rp(r.jumlah) }, { h: 'Status', f: (r) => chip(r.status) }, { h: 'Catatan', cls: 'kol-sm', k: 'catatan_proses' }], W.konfirmasi) : '') +
+    '<h2 class="sec">Riwayat pembayaran</h2>' + tableHTML([{ h: 'Tanggal', cls: 'nw kol-sm', f: (r) => tglID(r.tanggal) }, { h: 'Untuk bulan', f: (r) => blnID(r.periode) }, { h: 'Jumlah', cls: 'r num', f: (r) => rp(r.jumlah) }, { h: 'Metode', cls: 'kol-sm', k: 'metode' }, { h: 'Status', f: (r) => chip(r.status) }], W.riwayat, { empty: 'Belum ada pembayaran tercatat.' }) +
     (pengumumanBaru ? '<h2 class="sec">Pengumuman terbaru</h2>' + pengumumanBaru + '<p><a href="#/pengumuman">Lihat semua pengumuman</a></p>' : '') +
     '<div style="margin-top:22px" class="row"><button class="btn" id="btnPin">Ganti PIN</button><a class="btn" href="#/">Lihat laporan transparansi</a></div>';
   $('#btnPin').onclick = () => gantiPinModal(false);
@@ -707,20 +721,37 @@ function konfirmasiBayarModal(belum) {
    RUANG KERJA PENGURUS - kerangka, beranda, iuran, konfirmasi, data KK
    ================================================================ */
 const KEU = ['admin', 'bendahara', 'ketua', 'sekretaris', 'dewas', 'ketua_rt'];
+// Menu yang tampil ditentukan oleh hak akses (kap) akun, bukan lagi oleh nama peran. Bawaan tiap peran & pengecualian diatur Admin di menu Pengguna.
 const STAF_MENU = [
-  ['beranda', 'Beranda', null], ['pembayaran', 'Iuran & Tagihan', KEU], ['konfirmasi', 'Konfirmasi Warga', ['bendahara', 'admin']],
-  ['kk', 'Data Warga (KK)', KEU], ['rapb', 'RAPB & Pos', null], ['pengadaan', 'Pengadaan', null],
-  ['pengeluaran', 'Pengeluaran', ['admin', 'bendahara', 'ketua', 'sekretaris', 'dewas']], ['lain', 'Pendapatan Lain', ['admin', 'bendahara', 'ketua', 'dewas']],
-  ['danart', 'Dana RT', KEU], ['lpj', 'LPJ RT', KEU], ['pengumuman', 'Pengumuman', null],
-  ['laporan', 'Laporan Bulanan', ['bendahara', 'ketua', 'admin', 'sekretaris', 'dewas']], ['pemeriksaan', 'Pemeriksaan', ['dewas']],
-  ['pengguna', 'Pengguna', ['admin']], ['pengaturan', 'Pengaturan', ['admin']], ['audit', 'Jejak Audit', ['admin', 'dewas', 'ketua']]
+  ['beranda', 'Beranda'], ['pembayaran', 'Iuran & Tagihan'], ['konfirmasi', 'Konfirmasi Warga'], ['kk', 'Data Warga (KK)'], ['rapb', 'RAPB & Pos'], ['pengadaan', 'Pengadaan'],
+  ['pengeluaran', 'Pengeluaran'], ['lain', 'Pendapatan Lain'], ['danart', 'Dana RT'], ['lpj', 'LPJ RT'], ['pengumuman', 'Pengumuman'],
+  ['laporan', 'Laporan Bulanan'], ['pemeriksaan', 'Pemeriksaan'], ['pengguna', 'Pengguna & Hak Akses'], ['pengaturan', 'Pengaturan'], ['audit', 'Jejak Audit']
 ];
+const MENU_KAP = { pembayaran: 'pembayaran.lihat', konfirmasi: 'konfirmasi.lihat', kk: 'kk.lihat', rapb: 'rapb.lihat', pengadaan: 'pengadaan.lihat', pengeluaran: 'pengeluaran.lihat', lain: 'lain.lihat', danart: 'danart.lihat', lpj: 'lpj.lihat', pengumuman: 'pengumuman.lihat', laporan: 'laporan.lihat', pemeriksaan: 'pemeriksaan.catat', audit: 'audit.lihat', pengguna: 'pengguna.kelola', pengaturan: 'pengaturan.kelola' };
+const Bisa = (id) => !!SESI && !!SESI.profil && Array.isArray(SESI.profil.kap) && SESI.profil.kap.indexOf(id) >= 0;
+const menuBoleh = (m) => m[0] === 'beranda' || Bisa(MENU_KAP[m[0]]);
+let MENU_AKTIF = 'beranda';
+const navHTML = () => STAF_MENU.filter(menuBoleh).map((m) => '<a href="#/staf/' + m[0] + '" data-m="' + m[0] + '">' + m[1] + '</a>').join('');
+function tandaiNav() { $$('.side a').forEach((a) => a.classList.toggle('on', a.getAttribute('data-m') === MENU_AKTIF)); }
+// hak akses dapat diubah Admin kapan saja: ambil versi terbaru dari server (dashboard) dan segarkan menu bila berbeda
+function adopsiKap(d) {
+  const p = SESI && SESI.profil;
+  if (!p || !d || !Array.isArray(d.kap)) return false;
+  const beda = JSON.stringify(p.kap || []) !== JSON.stringify(d.kap) || p.role !== d.role || p.peran_nama !== d.peran_nama;
+  if (beda) { p.kap = d.kap; p.role = d.role; p.rt = d.rt; p.peran_nama = d.peran_nama; simpanSesi(SESI); }
+  return beda;
+}
+function segarkanNav() {
+  const nav = $('.side'); if (!nav) return;
+  nav.innerHTML = navHTML(); ikatMenuTurbo(); tandaiNav(); badges(); PREF_T = 0;
+  if (MENU_AKTIF !== 'beranda' && !STAF_MENU.some((m) => m[0] === MENU_AKTIF && menuBoleh(m))) location.hash = '#/staf';
+}
 const PERAN = { admin: 'Admin Sistem', ketua: 'Ketua', bendahara: 'Bendahara', sekretaris: 'Sekretaris', koordinator: 'Koordinator Bidang', dewas: 'Dewan Pengawas', ketua_rt: 'Pengurus RT' };
 const V = {};
-const R = (...r) => !!SESI && r.indexOf(SESI.profil.role) >= 0;
+const R = (...r) => !!SESI && r.indexOf(SESI.profil.role) >= 0;   // hanya untuk lingkup data (mis. Pengurus RT); hak tindakan memakai Bisa()
 const hariIniLokal = () => new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 10);
 let DASH = null, DASHT = 0;
-async function getDash(force) { DASH = await api('dashboardStaf', {}, force ? { fresh: true } : undefined); DASHT = Date.now(); return DASH; }
+async function getDash(force) { DASH = await api('dashboardStaf', {}, force ? { fresh: true } : undefined); DASHT = Date.now(); if (adopsiKap(DASH)) segarkanNav(); return DASH; }
 function badges() {
   const m = {}; if (DASH) DASH.tugas.forEach((t) => { m[t.menu] = (m[t.menu] || 0) + t.jumlah; });
   $$('.side a').forEach((a) => { const b = $('.badge', a); if (b) b.remove(); const n = m[a.getAttribute('data-m')]; if (n) a.appendChild(el('<span class="badge" aria-label="' + n + ' tugas">' + n + '</span>')); });
@@ -737,16 +768,21 @@ async function coba(fn, ok) { try { const r = await fn(); if (ok) toast(ok, 'goo
 async function tampilStaf(menu) {
   const app = $('#app');
   if (!SESI || SESI.profil.tipe !== 'user') return loginView('user', 'Masuk Pengurus', 'Khusus Pengurus Paguyuban, Pengurus RT, dan Dewan Pengawas.', 'nama pengguna');
-  const role = SESI.profil.role;
   if (SESI.profil.wajib_ganti_pin && !$('#modal .ov')) gantiPinModal(true);
-  const menuOk = STAF_MENU.filter((m) => !m[2] || m[2].indexOf(role) >= 0);
+  if (!Array.isArray(SESI.profil.kap)) {   // sesi lama (sebelum fitur Hak Akses): ambil hak akses dari server
+    app.innerHTML = '<div class="wrap">' + skeleton() + '</div>';
+    try { await getDash(true); } catch (e) { if (e.kode !== 'AUTH') app.innerHTML = '<div class="note bad"><span aria-hidden="true">!</span><div>' + esc(e.message) + '</div></div>'; return; }
+    if (!Array.isArray(SESI.profil.kap)) { app.innerHTML = '<div class="note bad"><span aria-hidden="true">!</span><div>Server belum diperbarui. Pasang Code.gs versi terbaru lalu deploy versi baru.</div></div>'; return; }
+  }
+  const menuOk = STAF_MENU.filter(menuBoleh);
   menu = menu || 'beranda';
   if (!menuOk.some((m) => m[0] === menu)) menu = 'beranda';
+  MENU_AKTIF = menu;
   if (!$('#stafMain')) {
-    app.innerHTML = '<div class="staff"><nav class="side no-print" aria-label="Menu pengurus">' + menuOk.map((m) => '<a href="#/staf/' + m[0] + '" data-m="' + m[0] + '">' + m[1] + '</a>').join('') + '</nav><div id="stafMain" style="min-width:0"></div></div>';
+    app.innerHTML = '<div class="staff"><nav class="side no-print" aria-label="Menu pengurus">' + navHTML() + '</nav><div id="stafMain" style="min-width:0"></div></div>';
   }
   ikatMenuTurbo();
-  $$('.side a').forEach((a) => a.classList.toggle('on', a.getAttribute('data-m') === menu));
+  tandaiNav();
   const main = $('#stafMain'), root = el('<div></div>');
   main.innerHTML = ''; main.appendChild(root); root.innerHTML = skeleton();
   try { await V[menu](root); } catch (e) { if (e.kode !== 'AUTH') root.innerHTML = '<div class="note bad"><span aria-hidden="true">!</span><div>' + esc(e.message) + '</div></div>'; return; }
@@ -759,9 +795,8 @@ function prefetchStaf(paksa) {
   if (!SESI || SESI.profil.tipe !== 'user' || typeof PREF === 'undefined') return;
   if (!paksa && Date.now() - PREF_T < 60000) return;
   PREF_T = Date.now();
-  const role = SESI.profil.role;
   let daftar = [];
-  STAF_MENU.filter((m) => !m[2] || m[2].indexOf(role) >= 0).forEach((m) => { if (PREF[m[0]]) daftar = daftar.concat(PREF[m[0]]()); });
+  STAF_MENU.filter(menuBoleh).forEach((m) => { if (PREF[m[0]]) daftar = daftar.concat(PREF[m[0]]()); });
   prefetch(daftar);
 }
 function ikatMenuTurbo() {
@@ -776,7 +811,7 @@ V.beranda = async (root) => {
   const tiles = p.role === 'ketua_rt'
     ? [['KK di ' + k.rt, k.kk, ''], ['Lunas bulan ini', k.lunas + ' KK', k.persen + '% dari nilai tagihan'], ['KK menunggak', k.tunggakan_kk, ''], ['Dana RT diterima tahun ini', rp(k.dana_diterima), '']]
     : [['Saldo kas', rp(k.saldo_kas), ''], ['IPL bulan ini', rp(k.ipl_bulan_ini), k.lunas + ' dari ' + k.kk + ' KK lunas (' + k.persen + '%)'], ['KK menunggak', k.tunggakan_kk, 'lewat jatuh tempo'], ['Peran Anda', PERAN[p.role] || p.role, p.jabatan || '']];
-  root.innerHTML = judul('Selamat datang, ' + p.nama, PERAN[p.role] + (p.rt ? ' ' + p.rt : '')) +
+  root.innerHTML = judul('Selamat datang, ' + p.nama, (p.peran_nama || PERAN[p.role]) + (p.rt ? ' ' + p.rt : '')) +
     '<div class="grid g4">' + tiles.map((t) => '<div class="card stat"><div class="lbl">' + esc(t[0]) + '</div><div class="val num" style="font-size:22px">' + esc(t[1]) + '</div><div class="note">' + esc(t[2]) + '</div></div>').join('') + '</div>' +
     '<h2 class="sec">Perlu tindakan</h2>' + (d.tugas.length ? '<div class="stack">' + d.tugas.map((t) => '<a class="note warn" style="text-decoration:none;color:inherit" href="#/staf/' + t.menu + '"><span aria-hidden="true">!</span><div><b>' + t.jumlah + '</b> &middot; ' + esc(t.teks) + '</div></a>').join('') + '</div>' : '<div class="note good"><span aria-hidden="true">✓</span><div>Tidak ada tugas yang menunggu Anda.</div></div>');
   badges();
@@ -805,7 +840,7 @@ function pesanIngat(t, nama, kontak) {
 }
 V.pembayaran = async (root) => {
   if (!PB.periode) PB.periode = hariIniLokal().slice(0, 7);
-  const tabs = [['status', 'Status tagihan'], ['tunggakan', 'Tunggakan']].concat(R('ketua_rt') ? [] : [['riwayat', 'Riwayat pembayaran']]);
+  const tabs = [['status', 'Status tagihan'], ['tunggakan', 'Tunggakan']].concat(Bisa('pembayaran.riwayat') ? [['riwayat', 'Riwayat pembayaran']] : []);
   root.innerHTML = judul('Iuran & Tagihan') + tabsHTML(tabs, PB.tab) + '<div id="pbBody"><div class="empty">Memuat...</div></div>';
   $$('[data-tab]', root).forEach((b) => { b.onclick = () => { PB.tab = b.getAttribute('data-tab'); V.pembayaran(root); }; });
   const body = $('#pbBody', root), ulang = () => V.pembayaran(root);
@@ -814,9 +849,9 @@ V.pembayaran = async (root) => {
     const rts = Array.from(new Set(d.daftar.map((x) => x.rt))).sort();
     const list = d.daftar.filter((x) => (!PB.rt || x.rt === PB.rt) && (!PB.q || (x.nama_kepala + ' ' + x.alamat + ' ' + x.id_kk).toLowerCase().indexOf(PB.q.toLowerCase()) >= 0));
     const jum = list.reduce((a, x) => ({ n: a.n + x.nominal, d: a.d + x.dibayar, s: a.s + x.sisa }), { n: 0, d: 0, s: 0 });
-    body.innerHTML = '<div class="filters"><div><label class="f" for="pbPer">Bulan</label><input type="month" id="pbPer" value="' + PB.periode + '"></div>' + (R('ketua_rt') ? '' : '<div><label class="f" for="pbRT">RT</label><select id="pbRT"><option value="">Semua RT</option>' + rts.map((x) => '<option' + (x === PB.rt ? ' selected' : '') + '>' + x + '</option>').join('') + '</select></div>') + '<div><label class="f" for="pbQ">Cari</label><input type="text" id="pbQ" value="' + esc(PB.q) + '" placeholder="nama / alamat / ID"></div>' + (R('bendahara', 'admin') ? '<div><button class="btn" id="pbBuat">Buat tagihan bulan ini</button></div>' : '') + '</div>' +
-      (d.belum_dibuat ? '<div class="note warn" style="margin-bottom:12px"><span aria-hidden="true">!</span><div>Tagihan bulan ' + blnID(PB.periode) + ' belum dibuat. ' + (R('bendahara', 'admin') ? 'Klik "Buat tagihan bulan ini". Tagihan juga dibuat otomatis tiap tanggal 1 bila pemicu otomatis terpasang.' : 'Bendahara perlu membuatnya.') + '</div></div>' : '') +
-      tableHTML([{ h: 'ID', k: 'id_kk', cls: 'nw' }, { h: 'Nama kepala keluarga', k: 'nama_kepala' }, { h: 'Alamat', k: 'alamat' }, { h: 'Tagihan', cls: 'r num', f: (r) => rp(r.nominal) }, { h: 'Dibayar', cls: 'r num', f: (r) => rp(r.dibayar) }, { h: 'Sisa', cls: 'r num', f: (r) => rp(r.sisa) }, { h: 'Status', f: (r) => chip(r.status) }, { h: '', f: (r) => (R('bendahara') && r.sisa > 0 ? '<button class="btn sm" data-catat="' + r.id_kk + '">Catat bayar</button>' : '') }], list, { empty: 'Tidak ada data.', foot: '<td colspan="3">Total ' + list.length + ' KK</td><td class="r num">' + rp(jum.n) + '</td><td class="r num">' + rp(jum.d) + '</td><td class="r num">' + rp(jum.s) + '</td><td colspan="2"></td>' });
+    body.innerHTML = '<div class="filters"><div><label class="f" for="pbPer">Bulan</label><input type="month" id="pbPer" value="' + PB.periode + '"></div>' + (R('ketua_rt') ? '' : '<div><label class="f" for="pbRT">RT</label><select id="pbRT"><option value="">Semua RT</option>' + rts.map((x) => '<option' + (x === PB.rt ? ' selected' : '') + '>' + x + '</option>').join('') + '</select></div>') + '<div><label class="f" for="pbQ">Cari</label><input type="text" id="pbQ" value="' + esc(PB.q) + '" placeholder="nama / alamat / ID"></div>' + (Bisa('pembayaran.buat') ? '<div><button class="btn" id="pbBuat">Buat tagihan bulan ini</button></div>' : '') + '</div>' +
+      (d.belum_dibuat ? '<div class="note warn" style="margin-bottom:12px"><span aria-hidden="true">!</span><div>Tagihan bulan ' + blnID(PB.periode) + ' belum dibuat. ' + (Bisa('pembayaran.buat') ? 'Klik "Buat tagihan bulan ini". Tagihan juga dibuat otomatis tiap tanggal 1 bila pemicu otomatis terpasang.' : 'Bendahara perlu membuatnya.') + '</div></div>' : '') +
+      tableHTML([{ h: 'ID', k: 'id_kk', cls: 'nw' }, { h: 'Nama kepala keluarga', k: 'nama_kepala' }, { h: 'Alamat', k: 'alamat' }, { h: 'Tagihan', cls: 'r num', f: (r) => rp(r.nominal) }, { h: 'Dibayar', cls: 'r num', f: (r) => rp(r.dibayar) }, { h: 'Sisa', cls: 'r num', f: (r) => rp(r.sisa) }, { h: 'Status', f: (r) => chip(r.status) }, { h: '', f: (r) => (Bisa('pembayaran.catat') && r.sisa > 0 ? '<button class="btn sm" data-catat="' + r.id_kk + '">Catat bayar</button>' : '') }], list, { empty: 'Tidak ada data.', foot: '<td colspan="3">Total ' + list.length + ' KK</td><td class="r num">' + rp(jum.n) + '</td><td class="r num">' + rp(jum.d) + '</td><td class="r num">' + rp(jum.s) + '</td><td colspan="2"></td>' });
     $('#pbPer', body).onchange = (e) => { if (e.target.value) { PB.periode = e.target.value; ulang(); } };
     const sr = $('#pbRT', body); if (sr) sr.onchange = () => { PB.rt = sr.value; ulang(); };
     const sq = $('#pbQ', body); sq.onchange = () => { PB.q = sq.value; ulang(); };
@@ -831,7 +866,7 @@ V.pembayaran = async (root) => {
     $$('[data-ing]', body).forEach((b) => { b.onclick = () => salinTeks(pesanIngat(t[Number(b.getAttribute('data-ing'))], nama, PUB ? PUB.kontak : '')); });
   } else {
     const l = await api('bayarList', {});
-    body.innerHTML = '<p class="t2 small">250 pembayaran terakhir.</p>' + tableHTML([{ h: 'Tanggal', cls: 'nw', f: (r) => tglID(r.tanggal) }, { h: 'Bulan', f: (r) => blnID(r.periode) }, { h: 'KK', f: (r) => esc(r.id_kk) + '<br><span class="small muted">' + esc(r.nama_kepala) + '</span>' }, { h: 'Jumlah', cls: 'r num', f: (r) => rp(r.jumlah) }, { h: 'Metode', k: 'metode' }, { h: 'Status', f: (r) => chip(r.status) }, { h: 'Bukti', f: (r) => btnBukti(r.bukti) }, { h: '', f: (r) => (R('bendahara', 'ketua') && r.status !== 'Dibatalkan' ? '<button class="btn sm bad" data-batal="' + r.id_bayar + '">Batalkan</button>' : '') }], l, { empty: 'Belum ada pembayaran.' });
+    body.innerHTML = '<p class="t2 small">250 pembayaran terakhir.</p>' + tableHTML([{ h: 'Tanggal', cls: 'nw', f: (r) => tglID(r.tanggal) }, { h: 'Bulan', f: (r) => blnID(r.periode) }, { h: 'KK', f: (r) => esc(r.id_kk) + '<br><span class="small muted">' + esc(r.nama_kepala) + '</span>' }, { h: 'Jumlah', cls: 'r num', f: (r) => rp(r.jumlah) }, { h: 'Metode', k: 'metode' }, { h: 'Status', f: (r) => chip(r.status) }, { h: 'Bukti', f: (r) => btnBukti(r.bukti) }, { h: '', f: (r) => (Bisa('pembayaran.batal') && r.status !== 'Dibatalkan' ? '<button class="btn sm bad" data-batal="' + r.id_bayar + '">Batalkan</button>' : '') }], l, { empty: 'Belum ada pembayaran.' });
     ikatBukti(body);
     $$('[data-batal]', body).forEach((b) => { b.onclick = () => formModal({ title: 'Batalkan pembayaran', fields: [{ name: 'alasan', label: 'Alasan pembatalan', type: 'textarea', max: 150, required: true }], submit: 'Batalkan pembayaran', onSubmit: async (v) => { await api('bayarBatal', { id_bayar: b.getAttribute('data-batal'), alasan: v.alasan }); toast('Pembayaran dibatalkan.', 'good'); DASHT = 0; ulang(); } }); });
   }
@@ -843,7 +878,7 @@ V.konfirmasi = async (root) => {
   const l = await api('konfirmasiList', { status: KF_STATUS });
   root.innerHTML = judul('Konfirmasi pembayaran warga', 'Bukti transfer yang dikirim warga dari portal. Periksa mutasi rekening sebelum menerima.') +
     '<div class="filters"><div><label class="f" for="kfSt">Status</label><select id="kfSt">' + ['Menunggu', 'Diterima', 'Ditolak', ''].map((s) => '<option value="' + s + '"' + (s === KF_STATUS ? ' selected' : '') + '>' + (s || 'Semua') + '</option>').join('') + '</select></div></div>' +
-    tableHTML([{ h: 'Dikirim', cls: 'nw', f: (r) => tglID(r.tgl_kirim) }, { h: 'KK', f: (r) => esc(r.id_kk) + '<br><span class="small muted">' + esc(r.nama_kepala) + '</span>' }, { h: 'Untuk bulan', f: (r) => esc(r.periode.split(',').map((p) => BLN3[Number(p.slice(5, 7)) - 1] + ' ' + p.slice(2, 4)).join(', ')) }, { h: 'Jumlah', cls: 'r num', f: (r) => rp(r.jumlah) }, { h: 'Tgl transfer', cls: 'nw', f: (r) => tglID(r.tgl_bayar) }, { h: 'Metode', k: 'metode' }, { h: 'Bukti', f: (r) => btnBukti(r.bukti, 'Lihat') }, { h: 'Status', f: (r) => chip(r.status) + (r.catatan_proses ? '<div class="small muted">' + esc(r.catatan_proses) + '</div>' : '') }, { h: '', f: (r) => (r.status === 'Menunggu' && R('bendahara') ? '<div class="row" style="gap:6px;flex-wrap:nowrap"><button class="btn sm ok" data-terima="' + r.id_konf + '">Terima</button><button class="btn sm bad" data-tolak="' + r.id_konf + '">Tolak</button></div>' : '') }], l, { empty: 'Tidak ada konfirmasi.' });
+    tableHTML([{ h: 'Dikirim', cls: 'nw', f: (r) => tglID(r.tgl_kirim) }, { h: 'KK', f: (r) => esc(r.id_kk) + '<br><span class="small muted">' + esc(r.nama_kepala) + '</span>' }, { h: 'Untuk bulan', f: (r) => esc(r.periode.split(',').map((p) => BLN3[Number(p.slice(5, 7)) - 1] + ' ' + p.slice(2, 4)).join(', ')) }, { h: 'Jumlah', cls: 'r num', f: (r) => rp(r.jumlah) }, { h: 'Tgl transfer', cls: 'nw', f: (r) => tglID(r.tgl_bayar) }, { h: 'Metode', k: 'metode' }, { h: 'Bukti', f: (r) => btnBukti(r.bukti, 'Lihat') }, { h: 'Status', f: (r) => chip(r.status) + (r.catatan_proses ? '<div class="small muted">' + esc(r.catatan_proses) + '</div>' : '') }, { h: '', f: (r) => (r.status === 'Menunggu' && Bisa('konfirmasi.proses') ? '<div class="row" style="gap:6px;flex-wrap:nowrap"><button class="btn sm ok" data-terima="' + r.id_konf + '">Terima</button><button class="btn sm bad" data-tolak="' + r.id_konf + '">Tolak</button></div>' : '') }], l, { empty: 'Tidak ada konfirmasi.' });
   ikatBukti(root);
   $('#kfSt', root).onchange = (e) => { KF_STATUS = e.target.value; V.konfirmasi(root); };
   $$('[data-terima]', root).forEach((b) => { b.onclick = async () => { const r = l.filter((x) => x.id_konf === b.getAttribute('data-terima'))[0]; if (await konfirmasi('Terima pembayaran', 'Terima ' + rp(r.jumlah) + ' dari ' + r.nama_kepala + ' (' + r.id_kk + ')? Pembayaran akan tercatat pada tagihan yang bersangkutan.', 'Terima', 'ok')) { if (await coba(() => api('konfirmasiProses', { id_konf: r.id_konf, keputusan: 'Terima' }), 'Pembayaran diterima dan dicatat.')) V.konfirmasi(root); } }; });
@@ -862,12 +897,12 @@ const KK_FIELDS = (d) => [
   { name: 'mulai_iuran', label: 'Mulai iuran (bulan)', type: 'month', value: d.mulai_iuran || '' }
 ].concat(d.id_kk ? [{ name: 'aktif', label: 'KK aktif (menghuni dan berkewajiban iuran)', type: 'checkbox', value: d.aktif !== 'Tidak' }] : []);
 V.kk = async (root) => {
-  const l = await api('kkList', {}), edit = R('admin', 'sekretaris');
+  const l = await api('kkList', {}), edit = Bisa('kk.ubah'), bReset = Bisa('kk.resetpin');
   const rts = Array.from(new Set(l.map((x) => x.rt))).sort();
   const f = l.filter((x) => (!KK_RT || x.rt === KK_RT) && (!KK_Q || (x.nama_kepala + ' ' + x.alamat + ' ' + x.id_kk).toLowerCase().indexOf(KK_Q.toLowerCase()) >= 0));
   root.innerHTML = judul('Data warga (KK)', l.length + ' keluarga terdaftar', edit ? '<button class="btn" id="kkImpor">Impor banyak KK</button><button class="btn pri" id="kkBaru">Tambah KK</button>' : '') +
     '<div class="filters">' + (R('ketua_rt') ? '' : '<div><label class="f" for="kkRT">RT</label><select id="kkRT"><option value="">Semua RT</option>' + rts.map((x) => '<option' + (x === KK_RT ? ' selected' : '') + '>' + x + '</option>').join('') + '</select></div>') + '<div><label class="f" for="kkQ">Cari</label><input type="text" id="kkQ" value="' + esc(KK_Q) + '" placeholder="nama / alamat / ID"></div></div>' +
-    tableHTML([{ h: 'ID', k: 'id_kk', cls: 'nw' }, { h: 'Nama kepala keluarga', k: 'nama_kepala' }, { h: 'Alamat', k: 'alamat' }, { h: 'Hunian', k: 'status_hunian' }, { h: 'Tarif', cls: 'r num', f: (r) => (r.tarif_ipl ? rp(r.tarif_ipl) : '<span class="muted">standar</span>') }, { h: 'Mulai', k: 'mulai_iuran', cls: 'nw' }, { h: 'HP', k: 'no_hp' }, { h: 'Aktif', f: (r) => (r.aktif === 'Ya' ? chip('Diterima').replace('Diterima', 'Aktif') : '<span class="chip">Nonaktif</span>') }, { h: '', f: (r) => (edit ? '<div class="row" style="gap:6px;flex-wrap:nowrap"><button class="btn sm" data-ubah="' + r.id_kk + '">Ubah</button><button class="btn sm" data-reset="' + r.id_kk + '">Reset PIN</button></div>' : '') }], f, { empty: 'Belum ada data KK.' });
+    tableHTML([{ h: 'ID', k: 'id_kk', cls: 'nw' }, { h: 'Nama kepala keluarga', k: 'nama_kepala' }, { h: 'Alamat', k: 'alamat' }, { h: 'Hunian', k: 'status_hunian' }, { h: 'Tarif', cls: 'r num', f: (r) => (r.tarif_ipl ? rp(r.tarif_ipl) : '<span class="muted">standar</span>') }, { h: 'Mulai', k: 'mulai_iuran', cls: 'nw' }, { h: 'HP', k: 'no_hp' }, { h: 'Aktif', f: (r) => (r.aktif === 'Ya' ? chip('Diterima').replace('Diterima', 'Aktif') : '<span class="chip">Nonaktif</span>') }, { h: '', f: (r) => ((edit || bReset) ? '<div class="row" style="gap:6px;flex-wrap:nowrap">' + (edit ? '<button class="btn sm" data-ubah="' + r.id_kk + '">Ubah</button>' : '') + (bReset ? '<button class="btn sm" data-reset="' + r.id_kk + '">Reset PIN</button>' : '') + '</div>' : '') }], f, { empty: 'Belum ada data KK.' });
   const sr = $('#kkRT', root); if (sr) sr.onchange = () => { KK_RT = sr.value; V.kk(root); };
   $('#kkQ', root).onchange = (e) => { KK_Q = e.target.value; V.kk(root); };
   if (!edit) return;
@@ -891,14 +926,13 @@ V.kk = async (root) => {
 /* ================================================================
    RUANG KERJA - RAPB, pengadaan, pengeluaran, pendapatan lain, Dana RT, LPJ
    ================================================================ */
-const PEMOHON = ['ketua', 'bendahara', 'sekretaris', 'koordinator', 'admin'];
 const selPos = (arr, tanpaRT) => arr.filter((p) => !(tanpaRT && p.kode === 'RT')).map((p) => ({ v: p.kode, l: p.nama }));
 
 /* ---------- RAPB & pos ---------- */
 let RB = { tahun: '', tab: 'item' };
 V.rapb = async (root) => {
   const d = await api('rapbList', { tahun: RB.tahun || undefined }); RB.tahun = d.tahun;
-  const edit = R('bendahara', 'admin');
+  const edit = Bisa('rapb.ubah');
   const tabs = [['item', 'Item RAPB'], ['pos', 'Porsi per pos']];
   const totA = d.item.reduce((a, x) => a + x.anggaran, 0), totR = d.item.reduce((a, x) => a + x.realisasi, 0);
   let isi;
@@ -907,7 +941,7 @@ V.rapb = async (root) => {
       '<p class="help">Target penerimaan IPL setahun (seluruh KK aktif × tarif × 12): ' + rp(d.target_ipl) + '. Dana RT tidak dimasukkan sebagai item karena dihitung otomatis.</p>';
   } else {
     isi = tableHTML([{ h: 'Pos', k: 'nama' }, { h: 'Pengelola', k: 'pengelola' }, { h: 'Porsi', cls: 'r', f: (r) => r.persen + '%' }, { h: 'Target alokasi', cls: 'r num', f: (r) => rp(d.target_ipl * r.persen / 100) }, { h: 'RAPB tersusun', cls: 'r num', f: (r) => rp(r.rapb) }, { h: 'Selisih', cls: 'r num', f: (r) => { const s = d.target_ipl * r.persen / 100 - r.rapb; return r.kode === 'RT' ? '<span class="muted">otomatis</span>' : (s < 0 ? '<span class="chip bad"><span aria-hidden="true">✕</span>lebih ' + rp(-s) + '</span>' : rp(s)); } }], d.pos) +
-      (R('admin') ? '<div style="margin-top:12px"><button class="btn" id="rbPorsi">Ubah porsi pos</button></div>' : '<p class="help">Porsi hanya dapat diubah Admin atas keputusan Musyawarah Warga bila di luar rentang ART.</p>');
+      (Bisa('rapb.pos') ? '<div style="margin-top:12px"><button class="btn" id="rbPorsi">Ubah porsi pos</button></div>' : '<p class="help">Porsi hanya dapat diubah Admin atas keputusan Musyawarah Warga bila di luar rentang ART.</p>');
   }
   root.innerHTML = judul('RAPB & porsi anggaran', 'Rencana Anggaran Pendapatan dan Belanja tahun ' + d.tahun, edit && RB.tab === 'item' ? '<button class="btn pri" id="rbBaru">Tambah item</button>' : '') +
     '<div class="filters"><div><label class="f" for="rbThn">Tahun</label><input type="number" id="rbThn" value="' + d.tahun + '" min="2000" max="2100" style="width:110px"></div></div>' + tabsHTML(tabs, RB.tab) + isi;
@@ -935,13 +969,13 @@ let PG_ST = '';
 function pengadaanKartu(p, ctx) {
   const me = SESI.profil, role = me.role;
   const termurah = p.penawaran.length ? Math.min.apply(null, p.penawaran.map((w) => w.harga)) : 0;
-  const bisaKelola = p.pemohon === me.id || role === 'bendahara' || role === 'admin';
+  const bisaKelola = p.pemohon === me.id || Bisa('pengadaan.beli') || role === 'admin';
   const sudah = p.persetujuan.map((x) => x.peran);
   const btn = [];
-  if (p.status === 'Diajukan' && bisaKelola && PEMOHON.indexOf(role) >= 0) { btn.push('<button class="btn sm" data-a="tawar" data-id="' + p.id_pengadaan + '">Tambah penawaran</button>', '<button class="btn sm pri" data-a="kirim" data-id="' + p.id_pengadaan + '">Kirim untuk persetujuan</button>'); }
-  if (p.status === 'Menunggu Persetujuan' && p.perlu.indexOf(role) >= 0 && sudah.indexOf(role) < 0 && p.pemohon !== me.id) btn.push('<button class="btn sm ok" data-a="setuju" data-id="' + p.id_pengadaan + '">Setujui</button>', '<button class="btn sm bad" data-a="tolak" data-id="' + p.id_pengadaan + '">Tolak</button>');
-  if (p.status === 'Disetujui' && role === 'bendahara') btn.push('<button class="btn sm pri" data-a="beli" data-id="' + p.id_pengadaan + '">Catat pembelian & unggah nota</button>');
-  if (['Diajukan', 'Menunggu Persetujuan', 'Disetujui'].indexOf(p.status) >= 0 && bisaKelola && PEMOHON.indexOf(role) >= 0) btn.push('<button class="btn sm" data-a="batal" data-id="' + p.id_pengadaan + '">Batalkan</button>');
+  if (p.status === 'Diajukan' && bisaKelola && Bisa('pengadaan.ajukan')) { btn.push('<button class="btn sm" data-a="tawar" data-id="' + p.id_pengadaan + '">Tambah penawaran</button>', '<button class="btn sm pri" data-a="kirim" data-id="' + p.id_pengadaan + '">Kirim untuk persetujuan</button>'); }
+  if (p.status === 'Menunggu Persetujuan' && Bisa('pengadaan.putus') && p.perlu.indexOf(role) >= 0 && sudah.indexOf(role) < 0 && p.pemohon !== me.id) btn.push('<button class="btn sm ok" data-a="setuju" data-id="' + p.id_pengadaan + '">Setujui</button>', '<button class="btn sm bad" data-a="tolak" data-id="' + p.id_pengadaan + '">Tolak</button>');
+  if (p.status === 'Disetujui' && Bisa('pengadaan.beli')) btn.push('<button class="btn sm pri" data-a="beli" data-id="' + p.id_pengadaan + '">Catat pembelian & unggah nota</button>');
+  if (['Diajukan', 'Menunggu Persetujuan', 'Disetujui'].indexOf(p.status) >= 0 && bisaKelola && Bisa('pengadaan.ajukan')) btn.push('<button class="btn sm" data-a="batal" data-id="' + p.id_pengadaan + '">Batalkan</button>');
   const rantai = '<div class="chain">' + p.perlu.map((r) => { const a = p.persetujuan.filter((x) => x.peran === r)[0]; if (!a) return '<span class="step">' + esc(PERAN[r]) + ': menunggu</span>'; return a.keputusan === 'Setuju' ? '<span class="step done"><span aria-hidden="true">✓</span> ' + esc(PERAN[r]) + ' (' + esc(a.nama) + ')</span>' : '<span class="step no"><span aria-hidden="true">✕</span> ' + esc(PERAN[r]) + ' menolak: ' + esc(a.catatan) + '</span>'; }).join('') + '</div>';
   return '<div class="pg"><div class="row"><h3 class="grow">' + esc(p.uraian) + '</h3>' + chip(p.status) + '</div>' +
     '<div class="pill-row small t2" style="margin-top:4px"><span class="chip ' + (p.tingkat === 'D' ? 'bad' : 'info') + '">' + TINGKAT[p.tingkat] + '</span><span>' + esc(ctx.posNama(p.pos)) + '</span><span>Pemohon: ' + esc(p.pemohon_nama) + ', ' + tglID(p.tgl_ajuan) + '</span></div>' +
@@ -954,7 +988,7 @@ function pengadaanKartu(p, ctx) {
 V.pengadaan = async (root) => {
   const [l, pos] = await Promise.all([api('pengadaanList', { status: PG_ST || undefined }), api('posList', {})]);
   const ctx = { posNama: (k) => posNamaDari(pos, k) };
-  root.innerHTML = judul('Pengadaan barang & jasa', 'Pengajuan, penawaran, persetujuan bertingkat, dan bukti pembelian.', PEMOHON.indexOf(SESI.profil.role) >= 0 ? '<button class="btn pri" id="pgBaru">Ajukan pengadaan</button>' : '') +
+  root.innerHTML = judul('Pengadaan barang & jasa', 'Pengajuan, penawaran, persetujuan bertingkat, dan bukti pembelian.', Bisa('pengadaan.ajukan') ? '<button class="btn pri" id="pgBaru">Ajukan pengadaan</button>' : '') +
     '<div class="filters"><div><label class="f" for="pgSt">Status</label><select id="pgSt">' + ['', 'Diajukan', 'Menunggu Persetujuan', 'Disetujui', 'Selesai', 'Ditolak', 'Dibatalkan'].map((s) => '<option value="' + s + '"' + (s === PG_ST ? ' selected' : '') + '>' + (s || 'Semua status') + '</option>').join('') + '</select></div></div>' +
     (l.map((p) => pengadaanKartu(p, ctx)).join('') || '<div class="tbl-wrap"><div class="empty">Belum ada pengadaan.</div></div>');
   $('#pgSt', root).onchange = (e) => { PG_ST = e.target.value; V.pengadaan(root); };
@@ -1002,8 +1036,8 @@ V.pengadaan = async (root) => {
 V.pengeluaran = async (root) => {
   const [l, pos, rb] = await Promise.all([api('keluarList', {}), api('posList', {}), api('rapbList', {})]);
   const nm = (k) => posNamaDari(pos, k);
-  root.innerHTML = judul('Pengeluaran', 'Seluruh pengeluaran kas. Belanja di atas batas Tingkat 1 harus melalui menu Pengadaan.', R('bendahara') ? '<button class="btn pri" id="kbBaru">Catat pengeluaran langsung</button>' : '') +
-    tableHTML([{ h: 'Tanggal', cls: 'nw', f: (r) => tglID(r.tanggal) }, { h: 'Pos', f: (r) => esc(nm(r.pos)) }, { h: 'Uraian', f: (r) => esc(r.uraian) + (r.id_pengadaan ? ' <span class="chip info">Pengadaan</span>' : '') }, { h: 'Penerima', k: 'penerima' }, { h: 'Jumlah', cls: 'r num', f: (r) => rp(r.jumlah) }, { h: 'Nota', f: (r) => btnBukti(r.bukti) }, { h: 'Status', f: (r) => chip(r.status) }, { h: '', f: (r) => (r.status === 'Menunggu' && R('ketua') && r.dicatat_oleh !== SESI.profil.id ? '<div class="row" style="gap:6px;flex-wrap:nowrap"><button class="btn sm ok" data-set="' + r.id_keluar + '">Setujui</button><button class="btn sm bad" data-tol="' + r.id_keluar + '">Tolak</button></div>' : '') }], l, { empty: 'Belum ada pengeluaran.' });
+  root.innerHTML = judul('Pengeluaran', 'Seluruh pengeluaran kas. Belanja di atas batas Tingkat 1 harus melalui menu Pengadaan.', Bisa('pengeluaran.catat') ? '<button class="btn pri" id="kbBaru">Catat pengeluaran langsung</button>' : '') +
+    tableHTML([{ h: 'Tanggal', cls: 'nw', f: (r) => tglID(r.tanggal) }, { h: 'Pos', f: (r) => esc(nm(r.pos)) }, { h: 'Uraian', f: (r) => esc(r.uraian) + (r.id_pengadaan ? ' <span class="chip info">Pengadaan</span>' : '') }, { h: 'Penerima', k: 'penerima' }, { h: 'Jumlah', cls: 'r num', f: (r) => rp(r.jumlah) }, { h: 'Nota', f: (r) => btnBukti(r.bukti) }, { h: 'Status', f: (r) => chip(r.status) }, { h: '', f: (r) => (r.status === 'Menunggu' && Bisa('pengeluaran.putus') && r.dicatat_oleh !== SESI.profil.id ? '<div class="row" style="gap:6px;flex-wrap:nowrap"><button class="btn sm ok" data-set="' + r.id_keluar + '">Setujui</button><button class="btn sm bad" data-tol="' + r.id_keluar + '">Tolak</button></div>' : '') }], l, { empty: 'Belum ada pengeluaran.' });
   ikatBukti(root);
   $$('[data-set]', root).forEach((b) => { b.onclick = async () => { if (await coba(() => api('keluarPutusan', { id_keluar: b.getAttribute('data-set'), keputusan: 'Setuju' }), 'Pengeluaran disetujui.')) V.pengeluaran(root); }; });
   $$('[data-tol]', root).forEach((b) => { b.onclick = () => formModal({ title: 'Tolak pengeluaran', fields: [{ name: 'catatan', label: 'Alasan penolakan', type: 'textarea', max: 150, required: true }], submit: 'Tolak', onSubmit: async (v) => { await api('keluarPutusan', { id_keluar: b.getAttribute('data-tol'), keputusan: 'Tolak', catatan: v.catatan }); DASHT = 0; V.pengeluaran(root); } }); });
@@ -1022,7 +1056,7 @@ V.pengeluaran = async (root) => {
 /* ---------- pendapatan lain ---------- */
 V.lain = async (root) => {
   const [l, pos] = await Promise.all([api('pendapatanLainList', {}), api('posList', {})]);
-  root.innerHTML = judul('Pendapatan lain', 'Di luar IPL: sewa fasilitas, donasi, bunga bank, dan sebagainya.', R('bendahara') ? '<button class="btn pri" id="plBaru">Catat pendapatan</button>' : '') +
+  root.innerHTML = judul('Pendapatan lain', 'Di luar IPL: sewa fasilitas, donasi, bunga bank, dan sebagainya.', Bisa('lain.catat') ? '<button class="btn pri" id="plBaru">Catat pendapatan</button>' : '') +
     tableHTML([{ h: 'Tanggal', cls: 'nw', f: (r) => tglID(r.tanggal) }, { h: 'Sumber', k: 'sumber' }, { h: 'Uraian', k: 'uraian' }, { h: 'Pos', f: (r) => esc(posNamaDari(pos, r.pos)) }, { h: 'Jumlah', cls: 'r num', f: (r) => rp(r.jumlah) }, { h: 'Bukti', f: (r) => btnBukti(r.bukti) }], l, { empty: 'Belum ada pendapatan lain.' });
   ikatBukti(root);
   const b = $('#plBaru', root);
@@ -1033,14 +1067,13 @@ V.lain = async (root) => {
 let DR_TAHUN = '';
 V.danart = async (root) => {
   const l = await api('danaRTList', { tahun: DR_TAHUN || undefined }); const thn = DR_TAHUN || (l[0] ? l[0].periode.slice(0, 4) : String(new Date().getFullYear()));
-  const b = R('bendahara');
-  root.innerHTML = judul('Dana RT', 'Dihitung dari IPL yang diterima bulan sebelumnya × porsi RT; 40% dibagi rata, 60% menurut jumlah KK.', b ? '<button class="btn" id="drHitung">Hitung bulan ini</button><button class="btn pri" id="drSalur">Salurkan yang dipilih</button>' : '') +
+  const bH = Bisa('danart.hitung'), b = Bisa('danart.salur');
+  root.innerHTML = judul('Dana RT', 'Dihitung dari IPL yang diterima bulan sebelumnya × porsi RT; 40% dibagi rata, 60% menurut jumlah KK.', (bH ? '<button class="btn" id="drHitung">Hitung bulan ini</button>' : '') + (b ? '<button class="btn pri" id="drSalur">Salurkan yang dipilih</button>' : '')) +
     '<div class="filters"><div><label class="f" for="drThn">Tahun</label><input type="number" id="drThn" value="' + thn + '" style="width:110px"></div></div>' +
     tableHTML([{ h: b ? '' : 'x', f: (r) => (b && r.status === 'Terjadwal' ? '<input type="checkbox" data-pilih="' + r.id + '" aria-label="Pilih ' + r.rt + ' ' + r.periode + '">' : '') }, { h: 'Bulan', cls: 'nw', f: (r) => blnID(r.periode) }, { h: 'RT', k: 'rt' }, { h: 'Bagian rata', cls: 'r num', f: (r) => rp(r.dasar) }, { h: 'Bagian menurut KK', cls: 'r num', f: (r) => rp(r.proporsional) }, { h: 'Jumlah', cls: 'r num', f: (r) => rp(r.jumlah) }, { h: 'Status', f: (r) => chip(r.status) }, { h: 'Tgl salur', cls: 'nw', f: (r) => tglID(r.tgl_salur) }, { h: 'Referensi', k: 'ref' }].filter((c) => c.h !== 'x'), l, { empty: 'Belum ada perhitungan Dana RT tahun ini.' });
   $('#drThn', root).onchange = (e) => { DR_TAHUN = e.target.value; V.danart(root); };
-  if (!b) return;
-  $('#drHitung', root).onclick = () => formModal({ title: 'Hitung Dana RT', intro: 'Perhitungan diulang untuk baris yang belum disalurkan. Dasar: IPL yang diterima pada bulan sebelumnya.', fields: [{ name: 'periode', label: 'Untuk bulan', type: 'month', value: hariIniLokal().slice(0, 7) }], submit: 'Hitung', onSubmit: async (v) => { const r = await api('danaRTHitung', { periode: v.periode }); toast('Dihitung: IPL bulan lalu ' + rp(r.ipl_bulan_lalu) + ', dana dibagi ' + rp(r.pool) + '.', 'good'); DASHT = 0; V.danart(root); } });
-  $('#drSalur', root).onclick = () => {
+  if (bH) $('#drHitung', root).onclick = () => formModal({ title: 'Hitung Dana RT', intro: 'Perhitungan diulang untuk baris yang belum disalurkan. Dasar: IPL yang diterima pada bulan sebelumnya.', fields: [{ name: 'periode', label: 'Untuk bulan', type: 'month', value: hariIniLokal().slice(0, 7) }], submit: 'Hitung', onSubmit: async (v) => { const r = await api('danaRTHitung', { periode: v.periode }); toast('Dihitung: IPL bulan lalu ' + rp(r.ipl_bulan_lalu) + ', dana dibagi ' + rp(r.pool) + '.', 'good'); DASHT = 0; V.danart(root); } });
+  if (b) $('#drSalur', root).onclick = () => {
     const ids = $$('[data-pilih]:checked', root).map((c) => c.getAttribute('data-pilih'));
     if (!ids.length) return toast('Centang baris yang akan disalurkan.', 'bad');
     formModal({ title: 'Salurkan Dana RT', intro: ids.length + ' baris dipilih.', fields: [{ name: 'tgl_salur', label: 'Tanggal transfer', type: 'date', value: hariIniLokal() }, { name: 'ref', label: 'Referensi transfer', hint: '(opsional)', max: 80 }], submit: 'Tandai disalurkan', onSubmit: async (v) => { const r = await api('danaRTSalur', { ids: ids, tgl_salur: v.tgl_salur, ref: v.ref }); toast(r.disalurkan + ' baris ditandai disalurkan.', 'good'); DASHT = 0; V.danart(root); } });
@@ -1050,8 +1083,8 @@ V.danart = async (root) => {
 /* ---------- LPJ RT ---------- */
 V.lpj = async (root) => {
   const l = await api('lpjList', {}), me = SESI.profil.role, th = new Date().getFullYear();
-  root.innerHTML = judul('LPJ Dana RT', 'Laporan pertanggungjawaban penggunaan Dana RT tiap triwulan.', me === 'ketua_rt' ? '<button class="btn pri" id="lpBaru">Kirim LPJ triwulan</button>' : '') +
-    tableHTML([{ h: 'Triwulan', k: 'periode', cls: 'nw' }, { h: 'RT', k: 'rt' }, { h: 'Diterima', cls: 'r num', f: (r) => rp(r.dana_diterima) }, { h: 'Sosial', cls: 'r num', f: (r) => rp(r.sosial) }, { h: 'Keamanan', cls: 'r num', f: (r) => rp(r.keamanan) }, { h: 'Admin', cls: 'r num', f: (r) => rp(r.admin) }, { h: 'Insentif', cls: 'r num', f: (r) => rp(r.insentif) }, { h: 'Status', f: (r) => chip(r.status) + (r.catatan_proses ? '<div class="small muted">' + esc(r.catatan_proses) + '</div>' : '') + (r.peringatan.length ? '<div class="small" style="color:var(--warn-ink)">' + r.peringatan.map((w) => '! ' + esc(w)).join('<br>') + '</div>' : '') }, { h: 'Bukti', f: (r) => btnBukti(r.bukti) }, { h: '', f: (r) => (r.status === 'Dikirim' && R('bendahara', 'ketua', 'dewas') ? '<div class="row" style="gap:6px;flex-wrap:nowrap"><button class="btn sm ok" data-lt="' + r.id + '">Terima</button><button class="btn sm bad" data-lp="' + r.id + '">Perbaikan</button></div>' : '') }], l, { empty: 'Belum ada LPJ.' });
+  root.innerHTML = judul('LPJ Dana RT', 'Laporan pertanggungjawaban penggunaan Dana RT tiap triwulan.', Bisa('lpj.kirim') ? '<button class="btn pri" id="lpBaru">Kirim LPJ triwulan</button>' : '') +
+    tableHTML([{ h: 'Triwulan', k: 'periode', cls: 'nw' }, { h: 'RT', k: 'rt' }, { h: 'Diterima', cls: 'r num', f: (r) => rp(r.dana_diterima) }, { h: 'Sosial', cls: 'r num', f: (r) => rp(r.sosial) }, { h: 'Keamanan', cls: 'r num', f: (r) => rp(r.keamanan) }, { h: 'Admin', cls: 'r num', f: (r) => rp(r.admin) }, { h: 'Insentif', cls: 'r num', f: (r) => rp(r.insentif) }, { h: 'Status', f: (r) => chip(r.status) + (r.catatan_proses ? '<div class="small muted">' + esc(r.catatan_proses) + '</div>' : '') + (r.peringatan.length ? '<div class="small" style="color:var(--warn-ink)">' + r.peringatan.map((w) => '! ' + esc(w)).join('<br>') + '</div>' : '') }, { h: 'Bukti', f: (r) => btnBukti(r.bukti) }, { h: '', f: (r) => (r.status === 'Dikirim' && Bisa('lpj.proses') ? '<div class="row" style="gap:6px;flex-wrap:nowrap"><button class="btn sm ok" data-lt="' + r.id + '">Terima</button><button class="btn sm bad" data-lp="' + r.id + '">Perbaikan</button></div>' : '') }], l, { empty: 'Belum ada LPJ.' });
   ikatBukti(root);
   $$('[data-lt]', root).forEach((b) => { b.onclick = async () => { if (await coba(() => api('lpjProses', { id: b.getAttribute('data-lt'), keputusan: 'Terima' }), 'LPJ diterima.')) V.lpj(root); }; });
   $$('[data-lp]', root).forEach((b) => { b.onclick = () => formModal({ title: 'Minta perbaikan LPJ', fields: [{ name: 'c', label: 'Catatan perbaikan', type: 'textarea', max: 200, required: true }], submit: 'Kirim', onSubmit: async (v) => { await api('lpjProses', { id: b.getAttribute('data-lp'), keputusan: 'Perbaiki', catatan_proses: v.c }); DASHT = 0; V.lpj(root); } }); });
@@ -1069,7 +1102,7 @@ V.lpj = async (root) => {
    RUANG KERJA - pengumuman, laporan, pemeriksaan, pengguna, pengaturan, audit
    ================================================================ */
 V.pengumuman = async (root) => {
-  const l = await api('pengumumanList', {}), edit = R('ketua', 'sekretaris', 'bendahara', 'admin');
+  const l = await api('pengumumanList', {}), edit = Bisa('pengumuman.ubah');
   const KAT = ['Umum', 'Rapat', 'Tagihan', 'Laporan', 'Kegiatan', 'Darurat'];
   const form = (a) => [{ name: 'judul', label: 'Judul', value: a.judul || '', required: true, max: 120 }, { name: 'kategori', label: 'Kategori', type: 'select', options: KAT, value: a.kategori || 'Umum' }, { name: 'isi', label: 'Isi pengumuman', type: 'textarea', value: a.isi || '', max: 1500, required: true }, { name: 'tanggal', label: 'Tanggal', type: 'date', value: a.tanggal || hariIniLokal() }, { name: 'tampil_sampai', label: 'Tampilkan sampai', hint: '(opsional)', type: 'date', value: a.tampil_sampai || '' }, { name: 'tautan', label: 'Tautan', hint: '(opsional, diawali https://)', value: a.tautan || '', max: 300 }, { name: 'sematkan', label: 'Sematkan di halaman utama', type: 'checkbox', value: a.sematkan === 'Ya' }];
   root.innerHTML = judul('Pengumuman', 'Tampil di halaman publik dan portal warga. Tidak ada pesan otomatis; warga membaca pengumuman di halaman ini.', edit ? '<button class="btn pri" id="anBaru">Buat pengumuman</button>' : '') +
@@ -1087,7 +1120,7 @@ V.laporan = async (root) => {
   const d = await api('laporanPratinjau', { periode: LP_PER }), sn = d.snapshot;
   root.innerHTML = judul('Laporan bulanan', 'Pratinjau dihitung dari data terkini. Setelah diterbitkan, laporan tampil di halaman publik dan menjadi arsip.') +
     '<div class="filters"><div><label class="f" for="lpPer">Bulan laporan</label><input type="month" id="lpPer" value="' + LP_PER + '"></div><div>' + (d.terbit ? '<span class="chip good"><span aria-hidden="true">✓</span>Sudah terbit</span>' : '<span class="chip warn"><span aria-hidden="true">!</span>Belum terbit</span>') + '</div>' +
-    '<div class="row" style="gap:8px"><button class="btn" id="lpWa">Salin teks WhatsApp</button><button class="btn" id="lpCetak">Cetak</button>' + (R('bendahara', 'ketua') ? '<button class="btn pri" id="lpTerbit">' + (d.terbit ? 'Terbitkan ulang' : 'Terbitkan laporan') + '</button>' : '') + '</div></div>' +
+    '<div class="row" style="gap:8px"><button class="btn" id="lpWa">Salin teks WhatsApp</button><button class="btn" id="lpCetak">Cetak</button>' + (Bisa('laporan.terbit') ? '<button class="btn pri" id="lpTerbit">' + (d.terbit ? 'Terbitkan ulang' : 'Terbitkan laporan') + '</button>' : '') + '</div></div>' +
     '<div class="card">' + laporanBody({ data: sn, catatan: '' }) + '</div>';
   $('#lpPer', root).onchange = (e) => { if (e.target.value) { LP_PER = e.target.value; V.laporan(root); } };
   $('#lpWa', root).onclick = () => salinTeks(d.teks_wa);
@@ -1107,15 +1140,98 @@ V.pemeriksaan = async (root) => {
 function pinPenggunaModal(username, pin, judulM) {
   openModal({ title: judulM, body: '<div class="note warn" style="margin:12px 0"><span aria-hidden="true">!</span><div>PIN hanya ditampilkan sekali. Sampaikan langsung kepada yang bersangkutan; wajib diganti saat masuk pertama.</div></div><div class="kartu">Nama pengguna: <b>' + esc(username) + '</b><br>PIN sementara: <b class="num" style="font-size:20px;letter-spacing:.1em">' + esc(pin) + '</b></div>', actions: [{ label: 'Selesai', kind: 'pri', onClick: () => true }] });
 }
+/* ---------- editor hak akses: matriks menu x aksi ---------- */
+function izinEditor(meta, dasar, awal, basis) {
+  const box = el('<div class="izin"></div>');
+  let role = dasar, bs = basis || meta.bawaan[dasar] || [];
+  const st = {}; (awal || []).forEach((id) => { st[id] = true; });
+  const grup = {}; meta.kap.forEach((k) => { (grup[k.menu] = grup[k.menu] || []).push(k); });
+  const bw = () => meta.bawaan[role] || [];
+  const kunciTeks = (k) => (k.kunci === 'admin' ? 'Hanya Admin Sistem' : 'Melekat pada kursi jabatan');
+  const rtBatas = (k) => role === 'ketua_rt' && !k.rt;
+  const terkunci = (k) => !!k.kunci || rtBatas(k);
+  function normal() {
+    meta.kap.forEach((k) => { if (k.kunci) st[k.id] = bw().indexOf(k.id) >= 0; if (rtBatas(k)) st[k.id] = false; });
+    Object.keys(grup).forEach((m) => { const lihat = meta.menu_kap[m]; if (lihat && !st[lihat]) grup[m].forEach((k) => { if (k.id !== lihat) st[k.id] = false; }); });
+  }
+  function gambar() {
+    normal();
+    const total = meta.kap.filter((k) => !terkunci(k) || st[k.id]).length, aktif = meta.kap.filter((k) => st[k.id]).length;
+    const menuBuka = Object.keys(grup).filter((m) => st[meta.menu_kap[m]]).length;
+    box.innerHTML = '<div class="izin-bar"><b>' + aktif + '</b> hak aktif &middot; <b>' + menuBuka + '</b> menu terbuka (Beranda selalu terbuka)</div>' +
+      (role === 'ketua_rt' ? '<div class="note" style="margin:10px 0"><span aria-hidden="true">i</span><div>Pengurus RT hanya dapat memiliki hak yang terbatas pada RT-nya sendiri. Hak lintas RT tidak tersedia.</div></div>' : '') +
+      Object.keys(grup).map((m) => {
+        const ks = grup[m], n = ks.filter((k) => st[k.id]).length;
+        return '<section class="izin-g"><h3>' + esc(meta.menu[m]) + ' <span class="small muted" style="font-weight:400">' + n + ' dari ' + ks.length + ' hak</span></h3>' + ks.map((k) => {
+          const kunci = terkunci(k), ada = !!st[k.id], asal = bs.indexOf(k.id) >= 0;
+          const tag = kunci ? '<small>' + (rtBatas(k) ? 'Tidak tersedia untuk Pengurus RT' : kunciTeks(k)) + '</small>' : (ada && !asal ? '<small style="color:var(--good-ink)">Ditambah dari bawaan</small>' : (!ada && asal ? '<small style="color:var(--crit-ink)">Dicabut dari bawaan</small>' : ''));
+          return '<label class="izin-r' + (ada ? '' : ' off') + '"><input type="checkbox" data-k="' + k.id + '"' + (ada ? ' checked' : '') + (kunci ? ' disabled' : '') + '><span class="tx">' + esc(k.label) + tag + '</span></label>';
+        }).join('') + '</section>';
+      }).join('');
+    $$('input[data-k]', box).forEach((c) => {
+      c.onchange = () => {
+        const id = c.getAttribute('data-k'), k = meta.kap.filter((x) => x.id === id)[0];
+        st[id] = c.checked;
+        const lihat = meta.menu_kap[k.menu];
+        if (c.checked && lihat && id !== lihat) st[lihat] = true;
+        if (!c.checked && id === lihat) grup[k.menu].forEach((x) => { if (x.id !== lihat && !x.kunci) st[x.id] = false; });
+        gambar();
+      };
+    });
+  }
+  gambar();
+  return { box: box, get: () => meta.kap.filter((k) => st[k.id]).map((k) => k.id), setDasar: (d, basisBaru) => { role = d; bs = basisBaru || meta.bawaan[d] || []; Object.keys(st).forEach((k) => { delete st[k]; }); (bs).forEach((id) => { st[id] = true; }); gambar(); } };
+}
 V.pengguna = async (root) => {
-  const l = await api('userList', {});
-  const form = (u) => [{ name: 'username', label: 'Nama pengguna', value: u.username || '', required: true, max: 30, help: 'Huruf kecil, angka, titik, garis bawah. Contoh: bendahara1', autocomplete: 'off' }, { name: 'nama', label: 'Nama lengkap', value: u.nama || '', required: true, max: 80 }, { name: 'role', label: 'Peran', type: 'select', options: Object.keys(PERAN).map((k) => ({ v: k, l: PERAN[k] })), value: u.role || 'bendahara' }, { name: 'jabatan', label: 'Jabatan', hint: '(opsional)', value: u.jabatan || '', max: 60 }, { name: 'rt', label: 'RT (khusus Pengurus RT)', value: u.rt || '', max: 10, placeholder: 'RT01' }].concat(u.username ? [{ name: 'aktif', label: 'Akun aktif', type: 'checkbox', value: u.aktif !== 'Tidak' }] : []);
-  root.innerHTML = judul('Pengguna pengurus', 'Akun untuk Pengurus Paguyuban, Pengurus RT, dan Dewan Pengawas. Satu orang, satu akun.', '<button class="btn pri" id="ugBaru">Tambah pengguna</button>') +
-    tableHTML([{ h: 'Nama pengguna', k: 'username' }, { h: 'Nama', k: 'nama' }, { h: 'Peran', f: (r) => esc(PERAN[r.role] || r.role) + (r.rt ? ' ' + esc(r.rt) : '') }, { h: 'Jabatan', k: 'jabatan' }, { h: 'Status', f: (r) => (r.aktif === 'Ya' ? '<span class="chip good"><span aria-hidden="true">✓</span>Aktif</span>' : '<span class="chip">Nonaktif</span>') + (r.wajib_ganti_pin === 'Ya' ? ' <span class="chip warn">PIN awal</span>' : '') }, { h: '', f: (r) => '<div class="row" style="gap:6px;flex-wrap:nowrap"><button class="btn sm" data-ub="' + esc(r.username) + '">Ubah</button><button class="btn sm" data-rp="' + esc(r.username) + '">Reset PIN</button></div>' }], l, { empty: 'Belum ada pengguna.' });
-  $('#ugBaru', root).onclick = () => formModal({ title: 'Tambah pengguna', fields: form({}), onSubmit: async (v) => { const r = await api('userSimpan', { data: v }); V.pengguna(root); pinPenggunaModal(r.username, r.pin, 'Pengguna ditambahkan'); return false; } });
-  $$('[data-ub]', root).forEach((b) => { b.onclick = () => { const u = l.filter((x) => x.username === b.getAttribute('data-ub'))[0]; formModal({ title: 'Ubah ' + u.username, fields: form(u).filter((f) => f.name !== 'username'), onSubmit: async (v) => { await api('userSimpan', { data: Object.assign({ username: u.username }, v) }); toast('Disimpan.', 'good'); V.pengguna(root); } }); }; });
-  $$('[data-rp]', root).forEach((b) => { b.onclick = async () => { const u = b.getAttribute('data-rp'); if (await konfirmasi('Reset PIN', 'Buat PIN sementara baru untuk ' + u + '?', 'Reset PIN')) { const r = await coba(() => api('userResetPin', { username: u })); if (r) { V.pengguna(root); pinPenggunaModal(u, r.pin, 'PIN baru'); } } }; });
+  const [l, pr, meta] = await Promise.all([api('userList', {}), api('peranList', {}), api('izinMeta', {})]);
+  const tab = UG_TAB;
+  const opsiPeran = Object.keys(PERAN).map((k) => ({ v: 'b:' + k, l: PERAN[k] })).concat(pr.map((p) => ({ v: 'p:' + p.id_peran, l: p.nama + ' (peran kustom)' })));
+  const dasarDari = (v) => (v.indexOf('p:') === 0 ? (pr.filter((p) => p.id_peran === v.slice(2))[0] || {}).dasar : v.slice(2));
+  const form = (u) => [{ name: 'username', label: 'Nama pengguna', value: u.username || '', required: true, max: 30, help: 'Huruf kecil, angka, titik, garis bawah. Contoh: bendahara1', autocomplete: 'off' }, { name: 'nama', label: 'Nama lengkap', value: u.nama || '', required: true, max: 80 }, { name: 'peran', label: 'Peran', type: 'select', options: opsiPeran, value: u.peran_id ? 'p:' + u.peran_id : 'b:' + (u.role || 'bendahara'), help: 'Peran menentukan hak akses bawaan. Peran kustom dibuat di tab "Peran kustom".' }, { name: 'jabatan', label: 'Jabatan', hint: '(opsional)', value: u.jabatan || '', max: 60 }, { name: 'rt', label: 'RT (khusus peran berdasar Pengurus RT)', value: u.rt || '', max: 10, placeholder: 'RT01' }].concat(u.username ? [{ name: 'aktif', label: 'Akun aktif', type: 'checkbox', value: u.aktif !== 'Tidak' }] : []);
+  const kirim = (v, extra) => { const o = Object.assign({}, v, extra || {}); const p = o.peran; delete o.peran; if (p.indexOf('p:') === 0) o.peran_id = p.slice(2); else o.role = p.slice(2); return o; };
+  const tabs = '<div class="tabs" style="margin-top:0">' + [['akun', 'Akun pengurus'], ['peran', 'Peran kustom']].map((t) => '<button class="tab' + (t[0] === tab ? ' on' : '') + '" data-tab="' + t[0] + '">' + t[1] + '</button>').join('') + '</div>';
+  const ringkas = (k) => k.length + ' dari ' + meta.kap.length + ' hak';
+  let isi;
+  if (tab === 'akun') {
+    isi = tableHTML([{ h: 'Nama pengguna', f: (r) => esc(r.username) + '<div class="hanya-sm small muted">' + esc(r.nama) + '</div>' }, { h: 'Nama', cls: 'kol-sm', k: 'nama' }, { h: 'Peran', f: (r) => esc(r.peran_nama) + (r.rt ? ' ' + esc(r.rt) : '') + (r.khusus ? ' <span class="chip warn">Hak khusus</span>' : '') }, { h: 'Jabatan', cls: 'kol-sm', k: 'jabatan' }, { h: 'Hak', cls: 'kol-sm nw', f: (r) => '<span class="small muted">' + ringkas(r.kap) + '</span>' }, { h: 'Status', cls: 'kol-sm', f: (r) => (r.aktif === 'Ya' ? '<span class="chip good"><span aria-hidden="true">✓</span>Aktif</span>' : '<span class="chip">Nonaktif</span>') + (r.wajib_ganti_pin === 'Ya' ? ' <span class="chip warn">PIN awal</span>' : '') }, { h: '', f: (r) => '<div class="row aksi-v" style="gap:6px;flex-wrap:nowrap"><button class="btn sm" data-ub="' + esc(r.username) + '">Ubah</button>' + (r.role === 'admin' ? '' : '<button class="btn sm" data-iz="' + esc(r.username) + '">Hak akses</button>') + '<button class="btn sm" data-rp="' + esc(r.username) + '">Reset PIN</button></div>' }], l, { empty: 'Belum ada pengguna.' });
+  } else {
+    isi = '<p class="t2 small" style="margin:0 0 12px">Peran kustom adalah templat hak akses yang dapat dipakai untuk banyak akun, misalnya "Wakil Ketua" atau "Seksi Kebersihan". Hak persetujuan pengadaan tetap mengikuti kursi jabatan dasarnya sesuai ART.</p>' +
+      tableHTML([{ h: 'Nama peran', k: 'nama' }, { h: 'Kursi dasar', f: (r) => esc(PERAN[r.dasar] || r.dasar) }, { h: 'Hak', f: (r) => '<span class="small muted">' + ringkas(r.kap) + '</span>' }, { h: 'Pengguna', cls: 'r num', k: 'pengguna' }, { h: 'Keterangan', cls: 'kol-sm', k: 'keterangan' }, { h: '', f: (r) => '<div class="row aksi-v" style="gap:6px;flex-wrap:nowrap"><button class="btn sm" data-pu="' + esc(r.id_peran) + '">Ubah</button><button class="btn sm bad" data-ph="' + esc(r.id_peran) + '">Hapus</button></div>' }], pr, { empty: 'Belum ada peran kustom. Peran bawaan (Ketua, Bendahara, dan seterusnya) tetap dapat dipakai.' });
+  }
+  root.innerHTML = judul('Pengguna & hak akses', 'Atur siapa boleh membuka menu dan melakukan tindakan apa. Perubahan berlaku seketika.', tab === 'akun' ? '<button class="btn pri" id="ugBaru">Tambah pengguna</button>' : '<button class="btn pri" id="prBaru">Buat peran kustom</button>') + tabs + isi;
+  $$('[data-tab]', root).forEach((b) => { b.onclick = () => { UG_TAB = b.getAttribute('data-tab'); V.pengguna(root); }; });
+  if (tab === 'akun') {
+    $('#ugBaru', root).onclick = () => formModal({ title: 'Tambah pengguna', fields: form({}), onSubmit: async (v) => { const r = await api('userSimpan', { data: kirim(v) }); V.pengguna(root); pinPenggunaModal(r.username, r.pin, 'Pengguna ditambahkan'); return false; } });
+    $$('[data-ub]', root).forEach((b) => { b.onclick = () => { const u = l.filter((x) => x.username === b.getAttribute('data-ub'))[0]; formModal({ title: 'Ubah ' + u.username, fields: form(u).filter((f) => f.name !== 'username'), onSubmit: async (v) => { await api('userSimpan', { data: kirim(v, { username: u.username }) }); toast('Disimpan.', 'good'); V.pengguna(root); } }); }; });
+    $$('[data-rp]', root).forEach((b) => { b.onclick = async () => { const u = b.getAttribute('data-rp'); if (await konfirmasi('Reset PIN', 'Buat PIN sementara baru untuk ' + u + '?', 'Reset PIN')) { const r = await coba(() => api('userResetPin', { username: u })); if (r) { V.pengguna(root); pinPenggunaModal(u, r.pin, 'PIN baru'); } } }; });
+    $$('[data-iz]', root).forEach((b) => {
+      b.onclick = () => {
+        const u = l.filter((x) => x.username === b.getAttribute('data-iz'))[0], t = pr.filter((p) => p.id_peran === u.peran_id)[0];
+        const basis = t ? t.kap : meta.bawaan[u.role], ed = izinEditor(meta, u.role, u.kap, basis);
+        const wrap = el('<div></div>');
+        wrap.appendChild(el('<p class="t2 small" style="margin:0">Akun <b>' + esc(u.username) + '</b> (' + esc(u.peran_nama) + '). Centang hak yang boleh dipakai akun ini. Selisih dari bawaan peran ditandai dan disimpan sebagai pengecualian akun.</p>'));
+        wrap.appendChild(ed.box);
+        openModal({ title: 'Hak akses ' + u.nama, wide: true, body: wrap, actions: [{ label: 'Batal', onClick: () => true }, { label: 'Kembalikan ke bawaan', onClick: async () => { await api('userIzinSimpan', { username: u.username, reset: true }); toast('Hak akses dikembalikan ke bawaan peran.', 'good'); V.pengguna(root); } }, { label: 'Simpan', kind: 'pri', onClick: async () => { await api('userIzinSimpan', { username: u.username, kap: ed.get() }); toast('Hak akses disimpan.', 'good'); V.pengguna(root); } }] });
+      };
+    });
+  } else {
+    const peranModal = (p) => {
+      const baru = !p, dasar0 = p ? p.dasar : 'sekretaris';
+      const fs = [{ name: 'nama', label: 'Nama peran', value: p ? p.nama : '', required: true, max: 40, placeholder: 'Wakil Sekretaris' }, { name: 'dasar', label: 'Kursi dasar', type: 'select', options: meta.dasar.map((d) => ({ v: d, l: PERAN[d] })), value: dasar0, help: 'Menentukan hak bawaan dan hak persetujuan (sesuai ART). ' + (p && p.pengguna ? 'Tidak dapat diubah selama peran ini dipakai pengguna.' : '') }, { name: 'keterangan', label: 'Keterangan', hint: '(opsional)', value: p ? p.keterangan : '', max: 200 }];
+      const ed = izinEditor(meta, dasar0, p ? p.kap : meta.bawaan[dasar0], meta.bawaan[dasar0]);
+      const wrap = el('<div>' + fieldsHTML(fs) + '<h3 style="margin:16px 0 4px;font-size:15px">Hak akses peran ini</h3><div class="help">Titik awal adalah hak bawaan kursi dasar. Tambah atau cabut sesuai kebutuhan.</div></div>');
+      wrap.appendChild(ed.box);
+      const m = openModal({ title: baru ? 'Buat peran kustom' : 'Ubah peran ' + p.nama, wide: true, body: wrap, actions: [{ label: 'Batal', onClick: () => true }, { label: 'Simpan', kind: 'pri', onClick: async (mm) => { const v = readForm(mm, fs); await api('peranSimpan', { data: { id_peran: p ? p.id_peran : undefined, nama: v.nama, dasar: v.dasar, keterangan: v.keterangan, kap: ed.get() } }); toast('Peran disimpan.', 'good'); V.pengguna(root); } }] });
+      const sel = $('[name="dasar"]', m); if (p && p.pengguna) sel.disabled = true;
+      sel.onchange = () => { ed.setDasar(sel.value); };
+      if (p && p.pengguna) sel.setAttribute('data-dasar', dasar0);
+    };
+    $('#prBaru', root).onclick = () => peranModal(null);
+    $$('[data-pu]', root).forEach((b) => { b.onclick = () => peranModal(pr.filter((p) => p.id_peran === b.getAttribute('data-pu'))[0]); });
+    $$('[data-ph]', root).forEach((b) => { b.onclick = async () => { const p = pr.filter((x) => x.id_peran === b.getAttribute('data-ph'))[0]; if (await konfirmasi('Hapus peran', 'Hapus peran "' + p.nama + '"? Peran yang masih dipakai pengguna tidak dapat dihapus.', 'Hapus', 'bad')) { const r = await coba(() => api('peranHapus', { id_peran: p.id_peran }), 'Peran dihapus.'); if (r) V.pengguna(root); } }; });
+  }
 };
+let UG_TAB = 'akun';
 
 const PENGATURAN_INFO = [
   ['NAMA_PAGUYUBAN', 'Nama paguyuban', 'text'], ['ALAMAT', 'Alamat sekretariat', 'text'], ['TAHUN_ANGGARAN', 'Tahun anggaran berjalan', 'number'],
@@ -1158,7 +1274,7 @@ const PREF = {
   pengumuman: () => [['pengumumanList', {}]],
   laporan: () => [['laporanPratinjau', { periode: LP_PER || (() => { const t = hariIniLokal(), y = Number(t.slice(0, 4)), m = Number(t.slice(5, 7)); return m === 1 ? (y - 1) + '-12' : y + '-' + ('0' + (m - 1)).slice(-2); })() }], ['publicData', {}]],
   pemeriksaan: () => [['publicData', {}]],
-  pengguna: () => [['userList', {}]],
+  pengguna: () => [['userList', {}], ['peranList', {}], ['izinMeta', {}]],
   pengaturan: () => [['pengaturanGet', {}]],
   audit: () => [['auditList', {}]]
 };
@@ -1169,9 +1285,10 @@ const PREF = {
 function route() {
   const seg = location.hash.replace(/^#\/?/, '').split('/');
   if (API_URL.indexOf('GANTI_') === 0) {
-    $('#app').innerHTML = '<div class="card loginbox" style="max-width:560px"><h2>Halaman belum terhubung ke Google Sheets</h2><p class="t2">Buka berkas <b>index.html</b>, cari baris <code>const API_URL</code> (sekitar baris 213), lalu ganti dengan URL Web App Apps Script Anda (berakhiran <code>/exec</code>). Ikuti panduan pemasangan langkah 6.</p></div>';
+    $('#app').innerHTML = '<div class="card loginbox" style="max-width:560px"><h2>Halaman belum terhubung ke Google Sheets</h2><p class="t2">Buka berkas <b>index.html</b>, cari baris <code>const API_URL</code> (sekitar baris 227), lalu ganti dengan URL Web App Apps Script Anda (berakhiran <code>/exec</code>). Ikuti panduan pemasangan langkah 6.</p></div>';
     return;
   }
+  document.body.classList.toggle('lebar', seg[0] === 'staf' && !!SESI && SESI.profil.tipe === 'user');
   if ((seg[0] === 'staf' || seg[0] === 'warga') && !PUB) muatPublik().catch(() => { /* nama tetap default */ });
   if (seg[0] === 'staf') tampilStaf(seg[1]);
   else if (seg[0] === 'warga') tampilWarga();
