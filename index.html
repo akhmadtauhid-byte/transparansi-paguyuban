@@ -1,0 +1,1058 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Transparansi Paguyuban</title>
+<meta name="description" content="Laporan kas, pengadaan, dan penggunaan anggaran Paguyuban Warga secara terbuka.">
+<style>
+:root {
+  color-scheme: light;
+  --bg: #f4f4f1; --surface: #fcfcfb; --surface-2: #f0efec;
+  --text: #0b0b0b; --text-2: #52514e; --muted: #77766f;
+  --line: #e3e2dc; --line-2: #d3d2ca;
+  --accent: #2a78d6; --accent-ink: #ffffff; --accent-soft: #e3effc;
+  --s1: #2a78d6; --s2: #eb6834; --track: #cde2fb;
+  --good: #0ca30c; --good-ink: #006300; --good-bg: #e6f5e6;
+  --warn: #fab219; --warn-ink: #7a5200; --warn-bg: #fff3d6;
+  --serious: #ec835a; --crit: #d03b3b; --crit-ink: #a12525; --crit-bg: #fbe7e7;
+  --info-bg: #e3effc; --info-ink: #184f95;
+  --shadow: 0 1px 2px rgba(0,0,0,.04), 0 2px 8px rgba(0,0,0,.04);
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    color-scheme: dark;
+    --bg: #121211; --surface: #1a1a19; --surface-2: #232322;
+    --text: #ffffff; --text-2: #c3c2b7; --muted: #99988f;
+    --line: #333331; --line-2: #464643;
+    --accent: #3987e5; --accent-ink: #ffffff; --accent-soft: #14283f;
+    --s1: #3987e5; --s2: #d95926; --track: #0d366b;
+    --good-ink: #5fd35f; --good-bg: #12301a;
+    --warn-ink: #f6c453; --warn-bg: #3a2c0a;
+    --crit-ink: #ff8f8f; --crit-bg: #3d1616;
+    --info-bg: #14283f; --info-ink: #8fbcf3;
+    --shadow: none;
+  }
+}
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body { margin: 0; background: var(--bg); color: var(--text); font: 15px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; }
+a { color: var(--accent); }
+h1, h2, h3 { line-height: 1.25; margin: 0; }
+button, input, select, textarea { font: inherit; color: inherit; }
+.wrap { max-width: 1120px; margin: 0 auto; padding: 0 16px; }
+.hide { display: none !important; }
+.num { font-variant-numeric: tabular-nums; }
+.muted { color: var(--muted); } .t2 { color: var(--text-2); }
+.right { text-align: right; } .center { text-align: center; }
+.small { font-size: 13px; }
+.row { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
+.grow { flex: 1; }
+.grid { display: grid; gap: 14px; }
+.g2 { grid-template-columns: repeat(2, minmax(0, 1fr)); } .g3 { grid-template-columns: repeat(3, minmax(0, 1fr)); } .g4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+@media (max-width: 860px) { .g4 { grid-template-columns: repeat(2, minmax(0, 1fr)); } .g3 { grid-template-columns: 1fr; } }
+@media (max-width: 640px) { .g2, .g4 { grid-template-columns: 1fr; } }
+
+/* header */
+.top { background: var(--surface); border-bottom: 1px solid var(--line); position: sticky; top: 0; z-index: 20; }
+.top .wrap { display: flex; align-items: center; gap: 12px; min-height: 56px; }
+.brand { font-weight: 700; font-size: 16px; text-decoration: none; color: var(--text); display: flex; align-items: center; gap: 10px; min-width: 0; }
+.brand .logo { width: 30px; height: 30px; border-radius: 8px; background: var(--accent); color: #fff; display: grid; place-items: center; font-weight: 700; flex: none; }
+.brand span.t { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.top .acts { margin-left: auto; display: flex; gap: 8px; flex: none; }
+.btn { appearance: none; border: 1px solid var(--line-2); background: var(--surface); border-radius: 9px; padding: 8px 14px; cursor: pointer; font-weight: 600; font-size: 14px; line-height: 1.2; text-decoration: none; display: inline-flex; align-items: center; gap: 6px; }
+.btn:hover { background: var(--surface-2); }
+.btn.pri { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.btn.pri:hover { filter: brightness(1.06); }
+.btn.ok { background: var(--good-bg); border-color: var(--good); color: var(--good-ink); }
+.btn.bad { background: var(--crit-bg); border-color: var(--crit); color: var(--crit-ink); }
+.btn.sm { padding: 5px 10px; font-size: 13px; border-radius: 8px; }
+.btn[disabled] { opacity: .5; cursor: not-allowed; }
+.btn:focus-visible, .tab:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.loadbar { position: fixed; left: 0; top: 0; height: 3px; width: 0; background: var(--accent); z-index: 100; transition: width .3s; }
+.loadbar.on { width: 70%; transition: width 6s cubic-bezier(.1,.6,.3,1); }
+
+/* tabs */
+.tabs { display: flex; gap: 2px; overflow-x: auto; border-bottom: 1px solid var(--line); margin: 14px 0 18px; scrollbar-width: none; }
+.tabs::-webkit-scrollbar { display: none; }
+.tab { padding: 10px 14px; cursor: pointer; border: 0; background: none; font-weight: 600; color: var(--text-2); border-bottom: 2px solid transparent; white-space: nowrap; }
+.tab:hover { color: var(--text); }
+.tab.on { color: var(--accent); border-bottom-color: var(--accent); }
+
+/* cards */
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 18px; box-shadow: var(--shadow); }
+.card h2 { font-size: 16px; margin-bottom: 4px; } .card h3 { font-size: 14px; }
+.card .sub { color: var(--text-2); font-size: 13px; margin-bottom: 12px; }
+.sec { margin: 22px 0 10px; font-size: 18px; }
+.hero { padding: 22px 0 6px; }
+.hero h1 { font-size: 24px; } .hero p { margin: 4px 0 0; color: var(--text-2); }
+.stat .lbl { font-size: 13px; color: var(--text-2); }
+.stat .val { font-size: 26px; font-weight: 650; letter-spacing: -.01em; margin-top: 2px; }
+.stat .val.hero-fig { font-size: 48px; line-height: 1.1; }
+.stat .note { font-size: 13px; color: var(--muted); margin-top: 4px; }
+
+/* table */
+.tbl-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); }
+table { border-collapse: collapse; width: 100%; font-size: 14px; }
+th { text-align: left; font-weight: 600; font-size: 12.5px; color: var(--text-2); background: var(--surface-2); padding: 9px 12px; white-space: nowrap; border-bottom: 1px solid var(--line); }
+td { padding: 9px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
+tr:last-child td { border-bottom: 0; }
+td.r, th.r { text-align: right; } td.c, th.c { text-align: center; }
+td.nw { white-space: nowrap; }
+tbody tr:hover td { background: color-mix(in srgb, var(--surface-2) 55%, transparent); }
+tfoot td { font-weight: 650; background: var(--surface-2); }
+.empty { padding: 26px; text-align: center; color: var(--muted); }
+
+/* chips & meters */
+.chip { display: inline-flex; align-items: center; gap: 5px; padding: 2px 9px; border-radius: 99px; font-size: 12.5px; font-weight: 600; background: var(--surface-2); color: var(--text-2); white-space: nowrap; }
+.chip.good { background: var(--good-bg); color: var(--good-ink); } .chip.warn { background: var(--warn-bg); color: var(--warn-ink); }
+.chip.bad { background: var(--crit-bg); color: var(--crit-ink); } .chip.info { background: var(--info-bg); color: var(--info-ink); }
+.meter { height: 8px; background: var(--track); border-radius: 99px; overflow: hidden; min-width: 80px; }
+.meter > i { display: block; height: 100%; background: var(--accent); border-radius: 99px; }
+.meter.warn > i { background: var(--warn); } .meter.bad > i { background: var(--crit); }
+.legend { display: flex; gap: 16px; font-size: 13px; color: var(--text-2); margin: 4px 0 8px; flex-wrap: wrap; }
+.legend i { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 6px; vertical-align: -1px; }
+
+/* chart */
+.chartbox { position: relative; }
+.chartbox svg { width: 100%; height: auto; display: block; }
+.chartbox .gl { stroke: var(--line); stroke-width: 1; }
+.chartbox text { fill: var(--muted); font-size: 11px; }
+.tip { position: absolute; pointer-events: none; background: var(--surface); border: 1px solid var(--line-2); border-radius: 10px; padding: 8px 11px; font-size: 13px; box-shadow: 0 6px 20px rgba(0,0,0,.16); z-index: 5; min-width: 150px; }
+.tip b { display: block; margin-bottom: 3px; }
+.tip div { display: flex; justify-content: space-between; gap: 14px; }
+
+/* forms */
+label.f { display: block; font-size: 13px; font-weight: 600; margin: 12px 0 4px; }
+label.f small { font-weight: 400; color: var(--muted); }
+input[type=text], input[type=number], input[type=date], input[type=password], input[type=tel], input[type=month], select, textarea { width: 100%; padding: 9px 11px; border: 1px solid var(--line-2); border-radius: 9px; background: var(--surface); }
+textarea { min-height: 84px; resize: vertical; }
+.chk { display: flex; gap: 8px; align-items: center; margin: 6px 0; font-size: 14px; }
+.chk input { width: 18px; height: 18px; }
+.help { font-size: 12.5px; color: var(--muted); margin-top: 3px; }
+.err { color: var(--crit-ink); font-size: 13.5px; margin-top: 10px; }
+.filters { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 12px; align-items: end; }
+.filters > div { min-width: 140px; } .filters label.f { margin-top: 0; }
+
+/* modal & toast */
+.ov { position: fixed; inset: 0; background: rgba(0,0,0,.5); z-index: 60; display: flex; align-items: flex-start; justify-content: center; padding: 30px 12px; overflow-y: auto; }
+.mdl { background: var(--surface); border-radius: 16px; width: 100%; max-width: 560px; box-shadow: 0 20px 60px rgba(0,0,0,.35); border: 1px solid var(--line); }
+.mdl.wide { max-width: 860px; }
+.mdl header { padding: 16px 20px; border-bottom: 1px solid var(--line); display: flex; align-items: center; gap: 10px; }
+.mdl header h2 { font-size: 17px; flex: 1; }
+.mdl .bd { padding: 6px 20px 18px; }
+.mdl footer { padding: 12px 20px 18px; display: flex; gap: 10px; justify-content: flex-end; flex-wrap: wrap; }
+.x { border: 0; background: none; font-size: 22px; line-height: 1; cursor: pointer; color: var(--text-2); padding: 2px 8px; }
+#toast { position: fixed; bottom: 18px; left: 50%; transform: translateX(-50%); z-index: 90; display: flex; flex-direction: column; gap: 8px; align-items: center; width: calc(100% - 24px); max-width: 520px; }
+.toast { padding: 11px 16px; border-radius: 11px; font-size: 14px; background: var(--text); color: var(--bg); box-shadow: 0 8px 24px rgba(0,0,0,.25); }
+.toast.bad { background: var(--crit); color: #fff; } .toast.good { background: #0b7a0b; color: #fff; }
+
+/* notices */
+.note { border-radius: 12px; padding: 11px 14px; font-size: 14px; display: flex; gap: 10px; align-items: flex-start; }
+.note.info { background: var(--info-bg); color: var(--info-ink); } .note.warn { background: var(--warn-bg); color: var(--warn-ink); }
+.note.bad { background: var(--crit-bg); color: var(--crit-ink); } .note.good { background: var(--good-bg); color: var(--good-ink); }
+.stack > * + * { margin-top: 10px; }
+
+/* pengadaan chain */
+.chain { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 6px; }
+.step { font-size: 12.5px; padding: 3px 9px; border-radius: 99px; border: 1px solid var(--line-2); color: var(--text-2); }
+.step.done { background: var(--good-bg); border-color: transparent; color: var(--good-ink); font-weight: 600; }
+.step.no { background: var(--crit-bg); border-color: transparent; color: var(--crit-ink); font-weight: 600; }
+.pg { border: 1px solid var(--line); border-radius: 12px; padding: 14px; background: var(--surface); }
+.pg + .pg { margin-top: 10px; }
+.pg h3 { font-size: 15px; }
+
+/* staff layout */
+.staff { display: grid; grid-template-columns: 220px minmax(0, 1fr); gap: 18px; margin-top: 16px; align-items: start; }
+.side { position: sticky; top: 72px; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 8px; }
+.side a { display: flex; justify-content: space-between; align-items: center; padding: 9px 11px; border-radius: 9px; color: var(--text); text-decoration: none; font-weight: 550; font-size: 14px; }
+.side a:hover { background: var(--surface-2); } .side a.on { background: var(--accent-soft); color: var(--accent); }
+.side .badge { background: var(--crit); color: #fff; border-radius: 99px; font-size: 11.5px; padding: 1px 7px; }
+@media (max-width: 860px) {
+  .staff { grid-template-columns: 1fr; }
+  .side { position: static; display: flex; overflow-x: auto; gap: 2px; padding: 6px; }
+  .side a { white-space: nowrap; }
+}
+.loginbox { max-width: 400px; margin: 34px auto; }
+.foot { margin: 40px 0 30px; font-size: 13px; color: var(--muted); text-align: center; }
+.kartu { border: 1px dashed var(--line-2); border-radius: 10px; padding: 10px 12px; }
+@media print {
+  body { background: #fff; color: #000; } .top, .tabs, .btn, .foot, #toast, .no-print, .side { display: none !important; }
+  .ov { position: static; background: none; padding: 0; } .mdl { box-shadow: none; border: 0; max-width: none; } .mdl footer, .x { display: none; }
+  .card, .tbl-wrap { box-shadow: none; }
+}
+</style>
+</head>
+<body>
+<div class="loadbar" id="loadbar"></div>
+<header class="top">
+  <div class="wrap">
+    <a class="brand" href="#/" id="brand"><div class="logo">P</div><span class="t" id="brandName">Transparansi Paguyuban</span></a>
+    <div class="acts" id="acts"></div>
+  </div>
+</header>
+<main class="wrap" id="app"><div class="empty">Memuat...</div></main>
+<div id="modal"></div>
+<div id="toast"></div>
+
+<script>
+'use strict';
+/* ================================================================
+   SIKAS-PAGUYUBAN - Frontend (GitHub Pages)
+   PENTING SETIAP KALI FILE INI DIGANTI TOTAL:
+   pulihkan API_URL di bawah dengan URL Web App Apps Script Anda
+   (berakhiran /exec).
+   ================================================================ */
+const API_URL = 'GANTI_DENGAN_URL_WEB_APP';
+
+/* ---------- util ---------- */
+const $ = (s, r) => (r || document).querySelector(s);
+const $$ = (s, r) => Array.from((r || document).querySelectorAll(s));
+const esc = (v) => String(v === null || v === undefined ? '' : v).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const rp = (n) => 'Rp' + Math.round(Number(n) || 0).toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+const rpS = (n) => { n = Number(n) || 0; const a = Math.abs(n); if (a >= 1e9) return (n / 1e9).toFixed(1).replace('.', ',') + ' M'; if (a >= 1e6) return (n / 1e6).toFixed(1).replace('.', ',') + ' jt'; if (a >= 1e3) return Math.round(n / 1e3) + ' rb'; return String(n); };
+const BLN = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+const BLN3 = BLN.map((b) => b.slice(0, 3));
+const tglID = (d) => { if (!d) return '-'; const m = String(d).match(/^(\d{4})-(\d{2})-(\d{2})/); return m ? Number(m[3]) + ' ' + BLN3[Number(m[2]) - 1] + ' ' + m[1] : d; };
+const blnID = (p) => { const m = String(p || '').match(/^(\d{4})-(\d{2})/); return m ? BLN[Number(m[2]) - 1] + ' ' + m[1] : p; };
+const pct = (a, b) => (b > 0 ? Math.round(a / b * 1000) / 10 : 0);
+const POS_NAMA = {};
+const STATUS_CHIP = { 'Lunas': 'good', 'Diterima': 'good', 'Disetujui': 'good', 'Selesai': 'good', 'Disalurkan': 'good', 'Terverifikasi': 'good', 'Menunggak': 'bad', 'Ditolak': 'bad', 'Perlu Perbaikan': 'bad', 'Dibatalkan': 'bad', 'Sebagian': 'warn', 'Menunggu': 'warn', 'Menunggu Persetujuan': 'warn', 'Dikirim': 'info', 'Terjadwal': 'info', 'Diajukan': 'info', 'Belum bayar': '', 'Belum ada': 'warn' };
+const ICON = { good: '✓', bad: '✕', warn: '!', info: 'i', '': '' };
+const chip = (s) => { const k = STATUS_CHIP[s] === undefined ? '' : STATUS_CHIP[s]; return '<span class="chip ' + k + '">' + (ICON[k] ? '<span aria-hidden="true">' + ICON[k] + '</span>' : '') + esc(s) + '</span>'; };
+const linkNota = (u) => (u ? '<a href="' + esc(u) + '" target="_blank" rel="noopener">Lihat nota</a>' : '<span class="muted">-</span>');
+const el = (html) => { const t = document.createElement('template'); t.innerHTML = html.trim(); return t.content.firstChild; };
+
+/* ---------- sesi ---------- */
+let SESI = null;
+try { SESI = JSON.parse(sessionStorage.getItem('sikas_sesi') || 'null'); } catch (e) { SESI = null; }
+const simpanSesi = (s) => { SESI = s; try { if (s) sessionStorage.setItem('sikas_sesi', JSON.stringify(s)); else sessionStorage.removeItem('sikas_sesi'); } catch (e) { /* abaikan */ } };
+
+/* ---------- API ---------- */
+let loading = 0;
+function loadBar(on) { const b = $('#loadbar'); loading += on ? 1 : -1; if (loading > 0) b.classList.add('on'); else { b.classList.remove('on'); b.style.width = '100%'; setTimeout(() => { b.style.width = '0'; }, 250); } }
+async function api(action, data, opt) {
+  opt = opt || {};
+  if (API_URL.indexOf('GANTI_') === 0) throw new Error('API_URL belum diatur di index.html. Isi dengan URL Web App Apps Script.');
+  const body = Object.assign({}, data || {}, { action: action, token: SESI ? SESI.token : undefined });
+  loadBar(true);
+  try {
+    const res = await fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(body), redirect: 'follow' });
+    if (!res.ok) throw new Error('Server tidak merespons (' + res.status + ').');
+    const j = await res.json();
+    if (!j.ok) { const e = new Error(j.error || 'Terjadi kesalahan.'); e.kode = j.kode; if (j.kode === 'AUTH') { simpanSesi(null); renderAkun(); setTimeout(route, 30); } throw e; }
+    return j.data;
+  } catch (e) {
+    if (e instanceof TypeError) throw new Error('Tidak dapat terhubung ke server. Periksa koneksi internet Anda.');
+    throw e;
+  } finally { loadBar(false); }
+}
+function toast(msg, kind) { const t = el('<div class="toast ' + (kind || '') + '" role="status">' + esc(msg) + '</div>'); $('#toast').appendChild(t); setTimeout(() => t.remove(), kind === 'bad' ? 6500 : 3500); }
+const galat = (e) => toast(e.message || String(e), 'bad');
+
+/* ---------- modal & form ---------- */
+function closeModal() { $('#modal').innerHTML = ''; document.body.style.overflow = ''; }
+function openModal(o) {
+  const m = el('<div class="ov" role="dialog" aria-modal="true"><div class="mdl ' + (o.wide ? 'wide' : '') + '"><header><h2>' + esc(o.title) + '</h2><button class="x" aria-label="Tutup">&times;</button></header><div class="bd"></div><footer></footer></div></div>');
+  const bd = $('.bd', m); if (typeof o.body === 'string') bd.innerHTML = o.body; else bd.appendChild(o.body);
+  const ft = $('footer', m);
+  (o.actions || []).forEach((a) => { const b = el('<button class="btn ' + (a.kind || '') + '">' + esc(a.label) + '</button>'); b.onclick = async () => { if (a.keep === undefined) a.keep = false; b.disabled = true; try { const r = await a.onClick(m); if (r !== false && !a.keep) closeModal(); } catch (e) { const er = $('.err', m) || (() => { const x = el('<div class="err"></div>'); bd.appendChild(x); return x; })(); er.textContent = e.message; } finally { b.disabled = false; } }; ft.appendChild(b); });
+  if (!(o.actions || []).length) ft.remove();
+  if (o.locked) $('.x', m).remove(); else $('.x', m).onclick = closeModal;
+  m.addEventListener('mousedown', (ev) => { if (ev.target === m && !o.locked) closeModal(); });
+  $('#modal').innerHTML = ''; $('#modal').appendChild(m); document.body.style.overflow = 'hidden';
+  if (o.onOpen) o.onOpen(m);
+  return m;
+}
+function field(f) {
+  const id = 'f_' + f.name, v = f.value === undefined || f.value === null ? '' : f.value, req = f.required ? ' required' : '';
+  let inp;
+  if (f.type === 'select') inp = '<select id="' + id + '" name="' + f.name + '">' + (f.options || []).map((o) => { const ov = typeof o === 'object' ? o.v : o, ol = typeof o === 'object' ? o.l : o; return '<option value="' + esc(ov) + '"' + (String(ov) === String(v) ? ' selected' : '') + '>' + esc(ol) + '</option>'; }).join('') + '</select>';
+  else if (f.type === 'textarea') inp = '<textarea id="' + id + '" name="' + f.name + '" maxlength="' + (f.max || 1500) + '"' + req + '>' + esc(v) + '</textarea>';
+  else if (f.type === 'checkbox') return '<div class="chk"><input type="checkbox" id="' + id + '" name="' + f.name + '"' + (v ? ' checked' : '') + '><label for="' + id + '">' + esc(f.label) + '</label></div>';
+  else if (f.type === 'file') inp = '<input type="file" id="' + id + '" name="' + f.name + '" accept="image/*">';
+  else if (f.type === 'checks') inp = (f.options || []).map((o, i) => '<div class="chk"><input type="checkbox" name="' + f.name + '" value="' + esc(o.v) + '" id="' + id + i + '" data-nilai="' + esc(o.n || 0) + '"><label for="' + id + i + '">' + esc(o.l) + '</label></div>').join('');
+  else inp = '<input type="' + (f.type || 'text') + '" id="' + id + '" name="' + f.name + '" value="' + esc(v) + '"' + req + (f.type === 'number' ? ' inputmode="numeric" min="' + (f.min !== undefined ? f.min : 0) + '"' : '') + (f.max && f.type !== 'number' ? ' maxlength="' + f.max + '"' : '') + (f.placeholder ? ' placeholder="' + esc(f.placeholder) + '"' : '') + (f.autocomplete ? ' autocomplete="' + f.autocomplete + '"' : '') + '>';
+  return '<label class="f" for="' + id + '">' + esc(f.label) + (f.hint ? ' <small>' + esc(f.hint) + '</small>' : '') + '</label>' + inp + (f.help ? '<div class="help">' + esc(f.help) + '</div>' : '');
+}
+const fieldsHTML = (fs) => fs.map(field).join('');
+function readForm(root, fs) {
+  const o = {};
+  fs.forEach((f) => {
+    if (f.type === 'checkbox') o[f.name] = $('[name="' + f.name + '"]', root).checked ? 'Ya' : 'Tidak';
+    else if (f.type === 'checks') o[f.name] = $$('[name="' + f.name + '"]:checked', root).map((x) => x.value);
+    else if (f.type === 'file') o[f.name] = $('[name="' + f.name + '"]', root).files[0] || null;
+    else { const x = $('[name="' + f.name + '"]', root); o[f.name] = x ? x.value.trim() : ''; }
+  });
+  return o;
+}
+function formModal(o) {
+  return openModal({
+    title: o.title, wide: o.wide, body: (o.intro ? '<p class="t2">' + o.intro + '</p>' : '') + fieldsHTML(o.fields) + '<div class="err" style="display:none"></div>', onOpen: o.onOpen,
+    actions: [{ label: 'Batal', onClick: () => true }, { label: o.submit || 'Simpan', kind: 'pri', keep: true, onClick: async (m) => { const v = readForm(m, o.fields); const r = await o.onSubmit(v, m); if (r !== false) closeModal(); return false; } }]
+  });
+}
+function konfirmasi(judul, teks, label, kind) { return new Promise((res) => openModal({ title: judul, body: '<p>' + esc(teks) + '</p>', actions: [{ label: 'Batal', onClick: () => { res(false); return true; } }, { label: label || 'Ya, lanjutkan', kind: kind || 'pri', onClick: () => { res(true); return true; } }] })); }
+async function foto(file) {
+  if (!file) return null;
+  if (!/^image\//.test(file.type)) throw new Error('File harus berupa foto.');
+  const max = 1280;
+  let bmp;
+  try { bmp = await createImageBitmap(file, { imageOrientation: 'from-image' }); } catch (e) { bmp = await new Promise((ok, no) => { const i = new Image(); i.onload = () => ok(i); i.onerror = () => no(new Error('Foto tidak dapat dibaca.')); i.src = URL.createObjectURL(file); }); }
+  const w = bmp.width || bmp.naturalWidth, h = bmp.height || bmp.naturalHeight, k = Math.min(1, max / Math.max(w, h));
+  const c = document.createElement('canvas'); c.width = Math.round(w * k); c.height = Math.round(h * k);
+  const g = c.getContext('2d'); g.fillStyle = '#fff'; g.fillRect(0, 0, c.width, c.height); g.drawImage(bmp, 0, 0, c.width, c.height);
+  const blob = await new Promise((ok) => c.toBlob(ok, 'image/jpeg', 0.72));
+  const b64 = await new Promise((ok) => { const r = new FileReader(); r.onload = () => ok(String(r.result).split(',')[1]); r.readAsDataURL(blob); });
+  return { b64: b64, mime: 'image/jpeg' };
+}
+function tableHTML(cols, rows, o) {
+  o = o || {};
+  if (!rows.length) return '<div class="tbl-wrap"><div class="empty">' + esc(o.empty || 'Belum ada data.') + '</div></div>';
+  return '<div class="tbl-wrap"><table><thead><tr>' + cols.map((c) => '<th class="' + (c.cls || '') + '">' + esc(c.h) + '</th>').join('') + '</tr></thead><tbody>' + rows.map((r, i) => '<tr>' + cols.map((c) => '<td class="' + (c.cls || '') + '">' + (c.f ? c.f(r, i) : esc(r[c.k])) + '</td>').join('') + '</tr>').join('') + '</tbody>' + (o.foot ? '<tfoot><tr>' + o.foot + '</tr></tfoot>' : '') + '</table></div>';
+}
+function csvUnduh(nama, header, rows) {
+  const q = (v) => '"' + String(v === undefined || v === null ? '' : v).replace(/"/g, '""') + '"';
+  const t = '﻿' + [header].concat(rows).map((r) => r.map(q).join(',')).join('\r\n');
+  const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([t], { type: 'text/csv;charset=utf-8' })); a.download = nama; document.body.appendChild(a); a.click(); a.remove();
+}
+async function salinTeks(t) { try { await navigator.clipboard.writeText(t); toast('Teks disalin. Tempelkan ke grup WhatsApp.', 'good'); } catch (e) { openModal({ title: 'Salin teks', body: '<textarea readonly style="min-height:260px">' + esc(t) + '</textarea><div class="help">Pilih semua teks di atas lalu salin secara manual.</div>' }); } }
+
+/* ---------- gaya tambahan (disuntik agar bagian CSS utama tetap ringkas) ---------- */
+document.head.appendChild(el('<style>' +
+  '.stat .note{display:block;padding:0;border-radius:0;background:none;color:var(--muted);font-size:13px;margin-top:4px}.row>.grow{min-width:min(100%,220px)}.tabs .tab{font-size:14px}.hide-sm{display:inline}@media(max-width:640px){.hide-sm{display:none}}' +
+  '.pill-row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}' +
+  '.ann{border:1px solid var(--line);border-radius:12px;padding:14px 16px;background:var(--surface)}.ann+.ann{margin-top:10px}.ann.pin{border-color:var(--accent)}' +
+  '.ann h3{font-size:15px;margin:6px 0 4px}.ann .isi{white-space:pre-wrap;color:var(--text-2)}' +
+  '.kv{display:grid;grid-template-columns:auto 1fr;gap:4px 14px;font-size:14px}.kv dt{color:var(--text-2)}.kv dd{margin:0;text-align:right}' +
+  '.bar2{display:flex;height:10px;border-radius:99px;overflow:hidden;background:var(--track)}.bar2 i{display:block;height:100%}' +
+  '.pos-tbl td:first-child{min-width:140px}' +
+  '.swatch{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px}' +
+  '@media print{body.cetak #app{display:none}body.cetak .ov{display:block}}' +
+  '</style>'));
+
+/* ================================================================
+   HALAMAN PUBLIK
+   ================================================================ */
+let PUB = null;
+const PUB_TABS = [['', 'Ringkasan'], ['pengumuman', 'Pengumuman'], ['anggaran', 'Anggaran'], ['pengadaan', 'Pengadaan'], ['pengeluaran', 'Pengeluaran'], ['danart', 'Dana RT & LPJ'], ['laporan', 'Laporan Bulanan'], ['pemeriksaan', 'Pemeriksaan']];
+const TINGKAT = { '1': 'Tingkat 1', '2': 'Tingkat 2', '3': 'Tingkat 3', '4': 'Tingkat 4', 'D': 'Darurat' };
+Object.assign(STATUS_CHIP, { 'Wajar': 'good', 'Wajar dengan catatan': 'warn', 'Perlu perbaikan': 'bad' });
+const posNama = (k) => { const p = PUB && PUB.pos.filter((x) => x.kode === k)[0]; return p ? p.nama : k; };
+let PUB_ERR = null;
+
+async function muatPublik(tahun, periode) {
+  PUB = await api('publicData', { tahun: tahun || undefined, periode: periode || undefined });
+  $('#brandName').textContent = PUB.nama; document.title = 'Transparansi ' + PUB.nama;
+  return PUB;
+}
+
+function shellPublik(aktif, isi) {
+  const thn = PUB.tahun_opsi.map((t) => '<option' + (t === PUB.tahun ? ' selected' : '') + '>' + t + '</option>').join('');
+  const bln = BLN.map((b, i) => { const p = PUB.tahun + '-' + ('0' + (i + 1)).slice(-2); return '<option value="' + p + '"' + (p === PUB.periode ? ' selected' : '') + '>' + b + '</option>'; }).join('');
+  return '<section class="hero"><h1>' + esc(PUB.nama) + '</h1><p>Laporan keuangan terbuka untuk seluruh warga. Data diperbarui ' + tglID(PUB.hari_ini) + '.</p></section>' +
+    '<div class="tabs" role="tablist">' + PUB_TABS.map((t) => '<button class="tab' + (t[0] === aktif ? ' on' : '') + '" role="tab" data-go="#/' + t[0] + '">' + t[1] + '</button>').join('') + '</div>' +
+    '<div class="filters no-print"><div><label class="f" for="selTahun">Tahun</label><select id="selTahun">' + thn + '</select></div>' +
+    (aktif === '' ? '<div><label class="f" for="selBulan">Bulan iuran</label><select id="selBulan">' + bln + '</select></div>' : '') + '</div>' +
+    isi + '<div class="foot">' + esc(PUB.alamat) + '<br>' + esc(PUB.kontak) + '</div>';
+}
+function ikatPublik(root) {
+  $$('[data-go]', root).forEach((b) => { b.onclick = () => { location.hash = b.getAttribute('data-go'); }; });
+  const st = $('#selTahun', root), sb = $('#selBulan', root);
+  if (st) st.onchange = async () => { try { await muatPublik(st.value, ''); route(); } catch (e) { galat(e); } };
+  if (sb) sb.onchange = async () => { try { await muatPublik(PUB.tahun, sb.value); route(); } catch (e) { galat(e); } };
+}
+
+/* ---------- bagan kolom berkelompok ---------- */
+function niceMax(v) { if (v <= 0) return 1000000; const e = Math.pow(10, Math.floor(Math.log10(v))), f = v / e; return (f <= 1 ? 1 : f <= 2 ? 2 : f <= 5 ? 5 : 10) * e; }
+function bagan(b) {
+  const W = Math.max(300, Math.min(720, ($('#app').clientWidth || 756) - 36)), H = W < 500 ? 240 : 270, L = 52, R = 8, T = 10, B = 26, pw = W - L - R, ph = H - T - B;
+  const mx = niceMax(Math.max.apply(null, b.map((x) => Math.max(x.pendapatan, x.pengeluaran)).concat([0])));
+  const gw = pw / 12, bw = Math.min(16, gw * 0.3), lbl = gw >= 32 ? BLN3 : BLN.map((x) => x.charAt(0)), y = (v) => T + ph - (v / mx) * ph;
+  let s = '<svg viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="Diagram kolom pendapatan dan pengeluaran per bulan. Tersedia juga dalam bentuk tabel.">';
+  for (let i = 0; i <= 5; i++) { const v = mx / 5 * i, yy = y(v); s += '<line class="gl" x1="' + L + '" x2="' + (W - R) + '" y1="' + yy + '" y2="' + yy + '"/><text x="' + (L - 6) + '" y="' + (yy + 4) + '" text-anchor="end">' + rpS(v) + '</text>'; }
+  const kol = (x, v, warna) => {
+    if (v <= 0) return '';
+    const h = Math.max(2, ph * v / mx), yy = T + ph - h, r = Math.min(4, bw / 2, h);
+    return '<path d="M' + x + ',' + (yy + h) + 'V' + (yy + r) + 'Q' + x + ',' + yy + ' ' + (x + r) + ',' + yy + 'H' + (x + bw - r) + 'Q' + (x + bw) + ',' + yy + ' ' + (x + bw) + ',' + (yy + r) + 'V' + (yy + h) + 'Z" fill="' + warna + '"/>';
+  };
+  b.forEach((m, i) => {
+    const cx = L + gw * i + gw / 2, x1 = cx - bw - 1, x2 = cx + 1;
+    s += kol(x1, m.pendapatan, 'var(--s1)') + kol(x2, m.pengeluaran, 'var(--s2)');
+    s += '<text x="' + cx + '" y="' + (H - 8) + '" text-anchor="middle">' + lbl[i] + '</text>';
+    s += '<rect class="hit" data-i="' + i + '" x="' + (L + gw * i) + '" y="' + T + '" width="' + gw + '" height="' + ph + '" fill="transparent" tabindex="0" role="img" aria-label="' + BLN[i] + ': pendapatan ' + rp(m.pendapatan) + ', pengeluaran ' + rp(m.pengeluaran) + '"/>';
+  });
+  return s + '</svg>';
+}
+function baganKotak(b, tahun) {
+  const tb = tableHTML([{ h: 'Bulan', f: (r, i) => BLN[i] }, { h: 'Pendapatan', cls: 'r num', f: (r) => rp(r.pendapatan) }, { h: 'Pengeluaran', cls: 'r num', f: (r) => rp(r.pengeluaran) }, { h: 'Selisih', cls: 'r num', f: (r) => rp(r.pendapatan - r.pengeluaran) }], b,
+    { foot: '<td>Total</td><td class="r num">' + rp(b.reduce((a, x) => a + x.pendapatan, 0)) + '</td><td class="r num">' + rp(b.reduce((a, x) => a + x.pengeluaran, 0)) + '</td><td class="r num">' + rp(b.reduce((a, x) => a + x.pendapatan - x.pengeluaran, 0)) + '</td>' });
+  return '<div class="card"><div class="row"><div class="grow"><h2>Pendapatan dan pengeluaran per bulan, ' + tahun + '</h2><div class="sub">Pengeluaran sudah termasuk Dana RT yang disalurkan.</div></div><button class="btn sm no-print" id="bgToggle">Lihat sebagai tabel</button></div>' +
+    '<div class="legend"><span><i class="swatch" style="background:var(--s1)"></i>Pendapatan</span><span><i class="swatch" style="background:var(--s2)"></i>Pengeluaran</span></div>' +
+    '<div class="chartbox" id="bgChart">' + bagan(b) + '<div class="tip hide" id="bgTip"></div></div><div id="bgTable" class="hide">' + tb + '</div></div>';
+}
+function ikatBagan(root, b) {
+  const box = $('#bgChart', root), tip = $('#bgTip', root), tg = $('#bgToggle', root);
+  if (!box) return;
+  const tampil = (i, ev) => {
+    const m = b[i], r = box.getBoundingClientRect();
+    tip.innerHTML = '<b>' + BLN[i] + '</b><div><span>Pendapatan</span><span class="num">' + rp(m.pendapatan) + '</span></div><div><span>Pengeluaran</span><span class="num">' + rp(m.pengeluaran) + '</span></div>';
+    tip.classList.remove('hide');
+    const rc = $('.hit[data-i="' + i + '"]', box).getBoundingClientRect();
+    let x = rc.left - r.left + rc.width / 2 + 12; if (x + tip.offsetWidth > r.width) x = rc.left - r.left + rc.width / 2 - tip.offsetWidth - 12;
+    tip.style.left = Math.max(0, x) + 'px'; tip.style.top = '10px';
+  };
+  $$('.hit', box).forEach((h) => { const i = Number(h.getAttribute('data-i')); h.addEventListener('mouseenter', (e) => tampil(i, e)); h.addEventListener('focus', (e) => tampil(i, e)); h.addEventListener('click', (e) => tampil(i, e)); h.addEventListener('mouseleave', () => tip.classList.add('hide')); h.addEventListener('blur', () => tip.classList.add('hide')); });
+  tg.onclick = () => { const t = $('#bgTable', root).classList.toggle('hide'); box.classList.toggle('hide', !t); tg.textContent = t ? 'Lihat sebagai tabel' : 'Lihat sebagai diagram'; };
+}
+
+/* ---------- tampilan publik ---------- */
+function tandaSetup() { return PUB.kpi.jumlah_kk === 0 ? '<div class="note info" style="margin-bottom:14px"><span aria-hidden="true">i</span><div>Data warga belum dimasukkan. Halaman ini akan terisi setelah pengurus menginput data KK dan pembayaran.</div></div>' : ''; }
+function vRingkasan() {
+  const k = PUB.kpi, kp = k.koleksi_periode, ky = k.koleksi_tahun;
+  const sem = PUB.pengumuman.filter((a) => a.sematkan).slice(0, 2).map((a) => '<div class="note ' + (a.kategori === 'Darurat' ? 'bad' : 'info') + '" style="margin-bottom:10px"><span aria-hidden="true">' + (a.kategori === 'Darurat' ? '!' : 'i') + '</span><div><b>' + esc(a.judul) + '</b><br>' + esc(a.isi.length > 200 ? a.isi.slice(0, 200) + '...' : a.isi) + ' <a href="#/pengumuman">Selengkapnya</a></div></div>').join('');
+  const tiles = '<div class="grid g3" style="margin-top:14px">' +
+    '<div class="card stat"><div class="lbl">Pendapatan ' + PUB.tahun + '</div><div class="val num">' + rp(k.pendapatan_tahun) + '</div><div class="note">IPL ' + rp(k.ipl_tahun) + ' dan pendapatan lain ' + rp(k.lain_tahun) + '</div></div>' +
+    '<div class="card stat"><div class="lbl">Pengeluaran ' + PUB.tahun + '</div><div class="val num">' + rp(k.pengeluaran_tahun) + '</div><div class="note">Termasuk Dana RT yang sudah disalurkan</div></div>' +
+    '<div class="card stat"><div class="lbl">Iuran IPL ' + blnID(PUB.periode) + '</div><div class="val num">' + kp.persen + '%</div><div class="meter' + (kp.persen < 60 ? ' warn' : '') + '" style="margin:6px 0" role="img" aria-label="' + kp.persen + ' persen"><i style="width:' + Math.min(100, kp.persen) + '%"></i></div><div class="note">' + kp.lunas + ' dari ' + kp.kk + ' KK sudah lunas (' + rp(kp.dibayar) + ' dari ' + rp(kp.tagihan) + ')</div></div></div>';
+  const rtCols = [{ h: 'RT', k: 'rt', cls: 'nw' }, { h: 'KK aktif', cls: 'r num', f: (r) => r.kk }, { h: 'IPL ' + BLN3[Number(PUB.periode.slice(5, 7)) - 1], cls: 'nw', f: (r) => '<div class="row" style="flex-wrap:nowrap"><div class="meter grow' + (r.persen < 60 ? ' warn' : '') + '" style="min-width:90px"><i style="width:' + Math.min(100, r.persen) + '%"></i></div><span class="num small" style="min-width:74px">' + r.kk_lunas + '/' + r.kk + ' (' + Math.round(r.persen) + '%)</span></div>' }, { h: 'Dana RT diterima', cls: 'r num', f: (r) => rp(r.dana_disalurkan) }, { h: 'LPJ terakhir', f: (r) => r.lpj_terlambat > 0 ? '<span class="chip bad"><span aria-hidden="true">✕</span>Terlambat ' + r.lpj_terlambat + ' triwulan</span>' : (r.lpj_terakhir ? esc(r.lpj_terakhir) + ' ' + chip(r.lpj_status) : chip('Belum ada')) }];
+  const tot = PUB.pos.reduce((a, p) => ({ al: a.al + p.alokasi, re: a.re + p.realisasi, sa: a.sa + p.saldo }), { al: 0, re: 0, sa: 0 });
+  const posCols = [{ h: 'Pos anggaran', k: 'nama' }, { h: 'Pengelola', k: 'pengelola', cls: 'nw' }, { h: 'Porsi', cls: 'r num', f: (r) => r.persen + '%' }, { h: 'Alokasi', cls: 'r num', f: (r) => rp(r.alokasi) }, { h: 'Realisasi', cls: 'r num', f: (r) => rp(r.realisasi) }, { h: 'Sisa', cls: 'r num', f: (r) => rp(r.saldo) }];
+  return tandaSetup() + sem +
+    '<div class="card stat"><div class="lbl">Saldo kas per ' + tglID(PUB.hari_ini) + '</div><div class="val hero-fig num">' + rp(k.saldo_kas) + '</div><div class="note">Seluruh penerimaan dikurangi seluruh pengeluaran sejak saldo awal.</div></div>' + tiles +
+    '<div style="margin-top:14px">' + baganKotak(PUB.bulanan, PUB.tahun) + '</div>' +
+    '<h2 class="sec">Kepatuhan iuran per RT</h2>' + tableHTML(rtCols, PUB.rt, { empty: 'Belum ada data RT.' }) +
+    '<h2 class="sec">Pembagian dan penggunaan dana per pos</h2>' + tableHTML(posCols, PUB.pos, { foot: '<td colspan="3">Total</td><td class="r num">' + rp(tot.al) + '</td><td class="r num">' + rp(tot.re) + '</td><td class="r num">' + rp(tot.sa) + '</td>' }) +
+    '<p class="help">Alokasi = porsi IPL tahun berjalan + pendapatan lain pada pos tersebut. Iuran dihitung sejak Januari sampai bulan berjalan: ' + ky.persen + '% dari nilai tagihan sudah terbayar.</p>';
+}
+function vPengumuman() {
+  if (!PUB.pengumuman.length) return '<div class="tbl-wrap"><div class="empty">Belum ada pengumuman.</div></div>';
+  return PUB.pengumuman.map((a) => '<article class="ann' + (a.sematkan ? ' pin' : '') + '"><div class="pill-row"><span class="chip ' + (a.kategori === 'Darurat' ? 'bad' : (a.kategori === 'Tagihan' ? 'warn' : 'info')) + '">' + esc(a.kategori) + '</span>' + (a.sematkan ? '<span class="chip">Disematkan</span>' : '') + '<span class="muted small">' + tglID(a.tanggal) + '</span></div><h3>' + esc(a.judul) + '</h3><div class="isi">' + esc(a.isi) + '</div>' + (a.tautan ? '<p style="margin:8px 0 0"><a href="' + esc(a.tautan) + '" target="_blank" rel="noopener">Buka tautan</a></p>' : '') + '</article>').join('');
+}
+function vAnggaran() {
+  const per = {}; PUB.rapb_item.forEach((r) => { (per[r.pos] = per[r.pos] || []).push(r); });
+  const blok = PUB.pos.filter((p) => per[p.kode]).map((p) => {
+    const it = per[p.kode], sA = it.reduce((a, x) => a + x.anggaran, 0), sR = it.reduce((a, x) => a + x.realisasi, 0);
+    return '<h3 style="margin:18px 0 8px">' + esc(p.nama) + ' <span class="muted small">(' + p.persen + '% dari IPL)</span></h3>' + tableHTML([{ h: 'Kegiatan / belanja', f: (r) => esc(r.uraian) + (r.sifat === 'Rutin' ? ' <span class="chip">Rutin</span>' : '') }, { h: 'Anggaran', cls: 'r num', f: (r) => rp(r.anggaran) }, { h: 'Realisasi', cls: 'r num', f: (r) => rp(r.realisasi) }, { h: 'Terserap', f: (r) => { const q = pct(r.realisasi, r.anggaran); return '<div class="row" style="flex-wrap:nowrap"><div class="meter grow' + (q > 100 ? ' bad' : (q >= 90 ? ' warn' : '')) + '"><i style="width:' + Math.min(100, q) + '%"></i></div><span class="num small" style="min-width:44px">' + q + '%</span></div>'; } }, { h: 'Sisa', cls: 'r num', f: (r) => rp(r.sisa) }], it, { foot: '<td>Subtotal</td><td class="r num">' + rp(sA) + '</td><td class="r num">' + rp(sR) + '</td><td class="num">' + pct(sR, sA) + '%</td><td class="r num">' + rp(sA - sR) + '</td>' });
+  }).join('');
+  return '<div class="note info" style="margin-bottom:8px"><span aria-hidden="true">i</span><div>Rencana Anggaran Pendapatan dan Belanja (RAPB) tahun ' + PUB.tahun + '. Total anggaran belanja Paguyuban: <b>' + rp(PUB.kpi.rapb_total) + '</b>. Dana RT dihitung otomatis dari IPL dan ditampilkan pada menu Dana RT & LPJ. Item bertanda "Rutin" adalah belanja bulanan berulang (mis. gaji satpam, listrik).</div></div>' + (blok || '<div class="tbl-wrap"><div class="empty">RAPB tahun ini belum disusun.</div></div>');
+}
+function rantaiHTML(p) {
+  const s = p.diperlukan.map((lbl) => {
+    const a = p.persetujuan.filter((x) => x.peran === lbl)[0];
+    if (!a) return '<span class="step">' + esc(lbl) + ': menunggu</span>';
+    return a.keputusan === 'Setuju' ? '<span class="step done"><span aria-hidden="true">✓</span> ' + esc(lbl) + ' (' + esc(a.nama) + ', ' + tglID(a.waktu) + ')</span>' : '<span class="step no"><span aria-hidden="true">✕</span> ' + esc(lbl) + ' menolak (' + esc(a.nama) + ')</span>';
+  }).join('');
+  return '<div class="chain">' + s + '</div>';
+}
+function vPengadaan() {
+  const a = PUB.aturan;
+  const info = '<div class="note info" style="margin-bottom:12px"><span aria-hidden="true">i</span><div>Setiap pembelian di luar belanja rutin melalui persetujuan bertingkat menurut nilainya terhadap total RAPB: Tingkat 1 sampai ' + a.t1 + '%, Tingkat 2 sampai ' + a.t2 + '%, Tingkat 3 sampai ' + a.t3 + '%, Tingkat 4 di atasnya atau di luar RAPB (memerlukan Musyawarah Warga). Mulai Tingkat 2 wajib minimal ' + a.min_penawaran + ' penawaran.</div></div>';
+  const st = $('#fSt') ? $('#fSt').value : '';
+  const daftar = PUB.pengadaan.filter((p) => !st || p.status === st);
+  const opt = ['', 'Diajukan', 'Menunggu Persetujuan', 'Disetujui', 'Selesai', 'Ditolak'].map((s) => '<option value="' + s + '"' + (s === st ? ' selected' : '') + '>' + (s || 'Semua status') + '</option>').join('');
+  const kartu = daftar.map((p) => '<div class="pg"><div class="row"><h3 class="grow">' + esc(p.uraian) + '</h3>' + chip(p.status) + '</div>' +
+    '<div class="pill-row small t2" style="margin-top:4px"><span class="chip ' + (p.tingkat === 'D' ? 'bad' : 'info') + '">' + TINGKAT[p.tingkat] + '</span><span>' + esc(posNama(p.pos)) + '</span><span>Diajukan ' + tglID(p.tgl_ajuan) + '</span>' + (p.penawaran ? '<span>' + p.penawaran + ' penawaran</span>' : '') + (p.vendor ? '<span>Penyedia: ' + esc(p.vendor) + '</span>' : '') + '</div>' +
+    '<div class="row" style="margin-top:8px"><div>Perkiraan <b class="num">' + rp(p.perkiraan) + '</b></div>' + (p.nilai_final ? '<div>Dibayar <b class="num">' + rp(p.nilai_final) + '</b> (' + tglID(p.tgl_beli) + ')</div>' : '') + (p.nota ? '<div><a href="' + esc(p.nota) + '" target="_blank" rel="noopener">Lihat nota</a></div>' : '') + '</div>' +
+    rantaiHTML(p) + (p.no_ba ? '<div class="help">Berita acara: ' + esc(p.no_ba) + '</div>' : '') + '</div>').join('');
+  return info + '<div class="filters"><div><label class="f" for="fSt">Status</label><select id="fSt">' + opt + '</select></div></div>' + (kartu || '<div class="tbl-wrap"><div class="empty">Belum ada pengadaan.</div></div>');
+}
+function vPengeluaran() {
+  const pos = $('#fPos') ? $('#fPos').value : '', q = $('#fQ') ? $('#fQ').value.toLowerCase() : '';
+  const d = PUB.pengeluaran.filter((p) => (!pos || p.pos === pos) && (!q || (p.uraian + ' ' + p.penerima).toLowerCase().indexOf(q) >= 0));
+  const opt = '<option value="">Semua pos</option>' + PUB.pos.map((p) => '<option value="' + p.kode + '"' + (p.kode === pos ? ' selected' : '') + '>' + esc(p.nama) + '</option>').join('');
+  const tot = d.reduce((a, x) => a + x.jumlah, 0);
+  return '<div class="filters"><div><label class="f" for="fPos">Pos</label><select id="fPos">' + opt + '</select></div><div><label class="f" for="fQ">Cari uraian/penerima</label><input type="text" id="fQ" value="' + esc(q) + '"></div></div>' +
+    tableHTML([{ h: 'Tanggal', cls: 'nw', f: (r) => tglID(r.tanggal) }, { h: 'Pos', f: (r) => esc(posNama(r.pos)) }, { h: 'Uraian', k: 'uraian' }, { h: 'Penerima', k: 'penerima' }, { h: 'Jumlah', cls: 'r num nw', f: (r) => rp(r.jumlah) }, { h: 'Nota', cls: 'nw', f: (r) => linkNota(r.nota) }], d, { empty: 'Tidak ada pengeluaran yang cocok.', foot: '<td colspan="4">Total ' + d.length + ' transaksi</td><td class="r num">' + rp(tot) + '</td><td></td>' }) +
+    '<p class="help">Menampilkan maksimal 80 transaksi terbaru tahun ' + PUB.tahun + '. Nota foto dapat dibuka oleh siapa pun yang memiliki tautan.</p>';
+}
+function vDanaRT() {
+  const dc = [{ h: 'Bulan', cls: 'nw', f: (r) => blnID(r.periode) }, { h: 'RT', k: 'rt' }, { h: 'Jumlah', cls: 'r num', f: (r) => rp(r.jumlah) }, { h: 'Status', f: (r) => chip(r.status) }, { h: 'Tgl salur', cls: 'nw', f: (r) => tglID(r.tgl_salur) }];
+  const lc = [{ h: 'Triwulan', k: 'periode', cls: 'nw' }, { h: 'RT', k: 'rt' }, { h: 'Diterima', cls: 'r num', f: (r) => rp(r.dana_diterima) }, { h: 'Sosial', cls: 'r num', f: (r) => rp(r.sosial) }, { h: 'Keamanan/ kebersihan', cls: 'r num', f: (r) => rp(r.keamanan) }, { h: 'Administrasi', cls: 'r num', f: (r) => rp(r.admin) }, { h: 'Insentif', cls: 'r num', f: (r) => rp(r.insentif) }, { h: 'Status', f: (r) => chip(r.status) }];
+  return '<div class="note info" style="margin-bottom:12px"><span aria-hidden="true">i</span><div>Dana RT dihitung dari IPL yang diterima bulan sebelumnya. 40% dibagi rata antar RT dan 60% dibagi menurut jumlah KK. Setiap RT wajib menyampaikan Laporan Pertanggungjawaban (LPJ) tiap triwulan.</div></div>' +
+    '<h2 class="sec" style="margin-top:6px">Penyaluran Dana RT</h2>' + tableHTML(dc, PUB.dana_rt, { empty: 'Belum ada penyaluran Dana RT.' }) +
+    '<h2 class="sec">Laporan pertanggungjawaban RT (LPJ)</h2>' + tableHTML(lc, PUB.lpj, { empty: 'Belum ada LPJ yang masuk.' });
+}
+function vLaporan() {
+  return '<div class="note info" style="margin-bottom:12px"><span aria-hidden="true">i</span><div>Laporan bulanan diterbitkan Bendahara dan tidak berubah setelah terbit, sehingga dapat dibandingkan dengan data berjalan.</div></div>' +
+    tableHTML([{ h: 'Bulan', f: (r) => '<b>' + blnID(r.periode) + '</b>' }, { h: 'Terbit', cls: 'nw', f: (r) => tglID(r.terbit_pada) }, { h: 'IPL', cls: 'r num', f: (r) => rp(r.data.ipl) }, { h: 'Pengeluaran', cls: 'r num', f: (r) => rp((r.data.pengeluaran || 0) + (r.data.dana_rt || 0)) }, { h: 'Saldo akhir', cls: 'r num', f: (r) => rp(r.data.saldo_akhir) }, { h: '', f: (r) => '<button class="btn sm" data-lap="' + r.periode + '">Buka</button>' }], PUB.laporan, { empty: 'Belum ada laporan yang diterbitkan.' });
+}
+function laporanBody(l) {
+  const d = l.data || {};
+  return '<div id="cetakArea"><div class="grid g2"><div><h3>Ringkasan kas</h3><dl class="kv"><dt>Saldo awal</dt><dd class="num">' + rp(d.saldo_awal) + '</dd><dt>Penerimaan IPL</dt><dd class="num">' + rp(d.ipl) + '</dd><dt>Penerimaan lain</dt><dd class="num">' + rp(d.lain) + '</dd><dt>Pengeluaran</dt><dd class="num">' + rp(d.pengeluaran) + '</dd><dt>Dana RT disalurkan</dt><dd class="num">' + rp(d.dana_rt) + '</dd><dt><b>Saldo akhir</b></dt><dd class="num"><b>' + rp(d.saldo_akhir) + '</b></dd></dl></div>' +
+    '<div><h3>Kepatuhan iuran</h3><dl class="kv"><dt>KK aktif</dt><dd>' + (d.kk_aktif || 0) + '</dd><dt>KK lunas</dt><dd>' + (d.koleksi ? d.koleksi.lunas : 0) + '</dd><dt>Nilai terbayar</dt><dd>' + (d.koleksi ? d.koleksi.persen : 0) + '%</dd><dt>Tunggakan (akhir laporan)</dt><dd class="num">' + rp(d.tunggakan ? d.tunggakan.total : 0) + ' (' + (d.tunggakan ? d.tunggakan.kk : 0) + ' KK)</dd></dl></div></div>' +
+    '<h3 style="margin:16px 0 6px">Pengeluaran per pos</h3>' + tableHTML([{ h: 'Pos', k: 'nama' }, { h: 'Realisasi', cls: 'r num', f: (r) => rp(r.realisasi) }], d.pos || []) +
+    '<h3 style="margin:16px 0 6px">Per RT</h3>' + tableHTML([{ h: 'RT', k: 'rt' }, { h: 'KK', cls: 'r', k: 'kk' }, { h: 'Lunas', cls: 'r', k: 'lunas' }, { h: '% terbayar', cls: 'r', f: (r) => r.persen + '%' }, { h: 'Dana RT', cls: 'r num', f: (r) => rp(r.dana) }], d.rt || []) +
+    '<h3 style="margin:16px 0 6px">Rincian pengeluaran</h3>' + tableHTML([{ h: 'Tanggal', cls: 'nw', f: (r) => tglID(r.tanggal) }, { h: 'Pos', f: (r) => esc(posNama(r.pos)) }, { h: 'Uraian', k: 'uraian' }, { h: 'Penerima', k: 'penerima' }, { h: 'Jumlah', cls: 'r num', f: (r) => rp(r.jumlah) }], d.pengeluaran_rinci || [], { empty: 'Tidak ada pengeluaran.' }) +
+    ((d.pendapatan_lain_rinci || []).length ? '<h3 style="margin:16px 0 6px">Pendapatan lain</h3>' + tableHTML([{ h: 'Tanggal', cls: 'nw', f: (r) => tglID(r.tanggal) }, { h: 'Sumber', k: 'sumber' }, { h: 'Uraian', k: 'uraian' }, { h: 'Jumlah', cls: 'r num', f: (r) => rp(r.jumlah) }], d.pendapatan_lain_rinci) : '') +
+    (l.catatan ? '<p class="t2"><b>Catatan Bendahara:</b> ' + esc(l.catatan) + '</p>' : '') + '</div>';
+}
+function cetak() { document.body.classList.add('cetak'); window.print(); setTimeout(() => document.body.classList.remove('cetak'), 500); }
+function bukaLaporan(periode) {
+  const l = PUB.laporan.filter((x) => x.periode === periode)[0]; if (!l) return;
+  openModal({ title: 'Laporan kas ' + blnID(l.periode), wide: true, body: laporanBody(l), actions: [{ label: 'Cetak / simpan PDF', onClick: () => { cetak(); return false; } }, { label: 'Tutup', kind: 'pri', onClick: () => true }] });
+}
+function vPemeriksaan() {
+  if (!PUB.pemeriksaan.length) return '<div class="tbl-wrap"><div class="empty">Belum ada hasil pemeriksaan Dewan Pengawas.</div></div>';
+  return '<div class="note info" style="margin-bottom:12px"><span aria-hidden="true">i</span><div>Dewan Pengawas memeriksa pembukuan, bukti transaksi, dan kepatuhan prosedur secara berkala dan melaporkan hasilnya kepada warga.</div></div>' +
+    PUB.pemeriksaan.map((p) => '<div class="pg"><div class="row"><h3 class="grow">Pemeriksaan ' + esc(p.periode) + '</h3>' + chip(p.opini) + '</div><div class="small muted">Diperiksa oleh ' + esc(p.dewas) + ', ' + tglID(p.tanggal) + '</div><p style="white-space:pre-wrap;margin:8px 0 0">' + esc(p.catatan) + '</p></div>').join('');
+}
+
+const PUB_VIEW = { '': vRingkasan, pengumuman: vPengumuman, anggaran: vAnggaran, pengadaan: vPengadaan, pengeluaran: vPengeluaran, danart: vDanaRT, laporan: vLaporan, pemeriksaan: vPemeriksaan };
+async function tampilPublik(seg) {
+  const app = $('#app');
+  if (!PUB) {
+    app.innerHTML = '<div class="empty">Memuat data...</div>';
+    try { await muatPublik(); } catch (e) {
+      app.innerHTML = '<div class="card loginbox"><h2>Data belum dapat dimuat</h2><p class="t2">' + esc(e.message) + '</p><button class="btn pri" id="ulang">Coba lagi</button></div>';
+      $('#ulang').onclick = () => tampilPublik(seg); return;
+    }
+  }
+  const fn = PUB_VIEW[seg] || vRingkasan;
+  app.innerHTML = shellPublik(PUB_VIEW[seg] ? seg : '', fn());
+  ikatPublik(app);
+  if (!seg) ikatBagan(app, PUB.bulanan);
+  $$('[data-lap]', app).forEach((b) => { b.onclick = () => bukaLaporan(b.getAttribute('data-lap')); });
+  ['fSt', 'fPos'].forEach((id) => { const x = $('#' + id, app); if (x) x.onchange = () => tampilPublik(seg); });
+  const fq = $('#fQ', app); if (fq) fq.oninput = () => { const v = fq.value; clearTimeout(fq._t); fq._t = setTimeout(() => { tampilPublik(seg); const n = $('#fQ'); n.focus(); n.setSelectionRange(v.length, v.length); }, 250); };
+}
+
+/* ================================================================
+   AKUN, LOGIN, PORTAL WARGA
+   ================================================================ */
+function renderAkun() {
+  const a = $('#acts');
+  if (SESI) {
+    const tujuan = SESI.profil.tipe === 'kk' ? '#/warga' : '#/staf';
+    a.innerHTML = '<span class="small t2 hide-sm" style="align-self:center">' + esc(SESI.profil.nama) + '</span><a class="btn sm" href="' + tujuan + '">' + (SESI.profil.tipe === 'kk' ? 'Portal saya' : 'Ruang kerja') + '</a><button class="btn sm" id="btnKeluar">Keluar</button>';
+    $('#btnKeluar').onclick = keluar;
+  } else {
+    a.innerHTML = '<a class="btn sm" href="#/warga">Portal Warga</a><a class="btn sm" href="#/staf">Pengurus</a>';
+  }
+}
+async function keluar() { try { await api('logout'); } catch (e) { /* abaikan */ } simpanSesi(null); renderAkun(); location.hash = '#/'; toast('Anda telah keluar.'); }
+
+function loginView(tipe, judul, info, placeholder) {
+  const app = $('#app');
+  app.innerHTML = '<div class="card loginbox"><h2>' + esc(judul) + '</h2><p class="sub">' + info + '</p>' +
+    '<form id="fLogin" autocomplete="off"><label class="f" for="lgId">' + (tipe === 'kk' ? 'ID Keluarga (KK)' : 'Nama pengguna') + '</label><input type="text" id="lgId" placeholder="' + esc(placeholder) + '" autocapitalize="none" autocomplete="username" required>' +
+    '<label class="f" for="lgPin">PIN 6 angka</label><input type="password" id="lgPin" inputmode="numeric" pattern="[0-9]*" maxlength="6" autocomplete="current-password" required>' +
+    '<div class="err hide" id="lgErr" role="alert"></div><div style="margin-top:16px"><button class="btn pri" style="width:100%;justify-content:center" id="lgBtn" type="submit">Masuk</button></div></form>' +
+    '<p class="help" style="margin-top:14px">' + (tipe === 'kk' ? 'ID dan PIN tertera pada Kartu PIN yang dibagikan pengurus. Lupa PIN? Hubungi Sekretaris atau Ketua RT untuk direset.' : 'Akun pengurus dibuat oleh Admin Sistem.') + '</p></div>';
+  $('#lgId').focus();
+  $('#fLogin').onsubmit = async (ev) => {
+    ev.preventDefault(); const b = $('#lgBtn'), er = $('#lgErr'); b.disabled = true; er.classList.add('hide');
+    try {
+      const r = await api('login', { tipe: tipe, id: $('#lgId').value.trim(), pin: $('#lgPin').value });
+      simpanSesi(r); renderAkun(); route();
+      if (r.profil.wajib_ganti_pin) { /* ditangani view */ }
+    } catch (e) { er.textContent = e.message; er.classList.remove('hide'); $('#lgPin').value = ''; b.disabled = false; }
+  };
+}
+function gantiPinModal(paksa) {
+  return openModal({
+    title: paksa ? 'Buat PIN baru' : 'Ganti PIN', locked: !!paksa,
+    body: (paksa ? '<div class="note warn" style="margin:12px 0"><span aria-hidden="true">!</span><div>PIN awal hanya untuk masuk pertama kali. Buat PIN pribadi 6 angka yang mudah Anda ingat dan jangan dibagikan kepada siapa pun.</div></div>' : '') +
+      fieldsHTML([{ name: 'pin_lama', label: 'PIN saat ini', type: 'password', max: 6, autocomplete: 'current-password' }, { name: 'pin_baru', label: 'PIN baru (6 angka)', type: 'password', max: 6, autocomplete: 'new-password', help: 'Tidak boleh angka berulang (111111) atau berurutan (123456).' }, { name: 'pin_ulang', label: 'Ulangi PIN baru', type: 'password', max: 6, autocomplete: 'new-password' }]),
+    actions: (paksa ? [{ label: 'Keluar', onClick: () => { keluar(); return true; } }] : [{ label: 'Batal', onClick: () => true }]).concat([{
+      label: 'Simpan PIN', kind: 'pri', keep: true, onClick: async (m) => {
+        const v = readForm(m, [{ name: 'pin_lama' }, { name: 'pin_baru' }, { name: 'pin_ulang' }]);
+        if (v.pin_baru !== v.pin_ulang) throw new Error('PIN baru dan ulangannya tidak sama.');
+        await api('gantiPin', { pin_lama: v.pin_lama, pin_baru: v.pin_baru });
+        SESI.profil.wajib_ganti_pin = false; simpanSesi(SESI); closeModal(); toast('PIN berhasil diganti.', 'good'); return false;
+      }
+    }])
+  });
+}
+
+/* ---------- portal warga ---------- */
+let WARGA = null;
+async function tampilWarga() {
+  const app = $('#app');
+  if (!SESI || SESI.profil.tipe !== 'kk') return loginView('kk', 'Portal Warga', 'Masuk untuk melihat tagihan IPL, riwayat pembayaran, dan mengirim bukti transfer.', 'contoh: RT01-001');
+  app.innerHTML = '<div class="empty">Memuat...</div>';
+  try { WARGA = await api('kkSaya'); } catch (e) { if (e.kode === 'AUTH') return route(); app.innerHTML = '<div class="card loginbox"><p>' + esc(e.message) + '</p></div>'; return; }
+  const W = WARGA, tg = W.tagihan, belum = tg.filter((t) => t.sisa > 0), tot = belum.reduce((a, t) => a + t.sisa, 0), nung = tg.filter((t) => t.status === 'Menunggak');
+  if (W.profil.wajib_ganti_pin) gantiPinModal(true);
+  const notif = W.notif.map((n) => '<div class="note ' + (n.jenis === 'peringatan' ? 'warn' : (n.jenis === 'sukses' ? 'good' : 'info')) + '"><span aria-hidden="true">' + (n.jenis === 'peringatan' ? '!' : (n.jenis === 'sukses' ? '✓' : 'i')) + '</span><div>' + esc(n.teks) + '</div></div>').join('');
+  const pengumumanBaru = (PUB ? PUB.pengumuman : []).slice(0, 3).map((a) => '<div class="ann"><span class="chip info">' + esc(a.kategori) + '</span> <span class="muted small">' + tglID(a.tanggal) + '</span><h3>' + esc(a.judul) + '</h3></div>').join('');
+  app.innerHTML = '<section class="hero"><h1>Halo, ' + esc(W.profil.nama) + '</h1><p>' + esc(W.profil.id) + ' &middot; ' + esc(W.profil.alamat) + ' &middot; ' + esc(W.nama) + '</p></section>' +
+    '<div class="stack" style="margin-top:14px">' + notif + '</div>' +
+    '<div class="grid g3" style="margin-top:14px"><div class="card stat"><div class="lbl">Total belum dibayar</div><div class="val num">' + rp(tot) + '</div><div class="note">' + belum.length + ' bulan tagihan' + (nung.length ? ', ' + nung.length + ' bulan lewat jatuh tempo' : '') + '</div></div>' +
+    '<div class="card"><h2>Cara membayar</h2><p class="t2" style="margin:4px 0 8px">' + esc(W.rekening) + '</p><div class="small muted">' + esc(W.kontak) + '</div></div>' +
+    '<div class="card"><h2>Sudah transfer?</h2><p class="t2" style="margin:4px 0 10px">Kirim foto bukti transfer agar Bendahara dapat memverifikasi.</p><button class="btn pri" id="btnKonf"' + (belum.length ? '' : ' disabled') + '>Kirim bukti pembayaran</button></div></div>' +
+    '<h2 class="sec">Tagihan IPL</h2>' + tableHTML([{ h: 'Bulan', f: (r) => blnID(r.periode) }, { h: 'Tagihan', cls: 'r num', f: (r) => rp(r.nominal) }, { h: 'Dibayar', cls: 'r num', f: (r) => rp(r.dibayar) }, { h: 'Sisa', cls: 'r num', f: (r) => rp(r.sisa) }, { h: 'Jatuh tempo', cls: 'nw', f: (r) => tglID(r.jatuh_tempo) }, { h: 'Status', f: (r) => chip(r.status) }], tg, { empty: 'Belum ada tagihan untuk keluarga Anda.' }) +
+    (W.konfirmasi.length ? '<h2 class="sec">Bukti pembayaran yang saya kirim</h2>' + tableHTML([{ h: 'Dikirim', cls: 'nw', f: (r) => tglID(r.tgl_kirim) }, { h: 'Untuk bulan', f: (r) => esc(r.periode.split(',').map(blnID).join(', ')) }, { h: 'Jumlah', cls: 'r num', f: (r) => rp(r.jumlah) }, { h: 'Status', f: (r) => chip(r.status) }, { h: 'Catatan', k: 'catatan_proses' }], W.konfirmasi) : '') +
+    '<h2 class="sec">Riwayat pembayaran</h2>' + tableHTML([{ h: 'Tanggal', cls: 'nw', f: (r) => tglID(r.tanggal) }, { h: 'Untuk bulan', f: (r) => blnID(r.periode) }, { h: 'Jumlah', cls: 'r num', f: (r) => rp(r.jumlah) }, { h: 'Metode', k: 'metode' }, { h: 'Status', f: (r) => chip(r.status) }], W.riwayat, { empty: 'Belum ada pembayaran tercatat.' }) +
+    (pengumumanBaru ? '<h2 class="sec">Pengumuman terbaru</h2>' + pengumumanBaru + '<p><a href="#/pengumuman">Lihat semua pengumuman</a></p>' : '') +
+    '<div style="margin-top:22px" class="row"><button class="btn" id="btnPin">Ganti PIN</button><a class="btn" href="#/">Lihat laporan transparansi</a></div>';
+  $('#btnPin').onclick = () => gantiPinModal(false);
+  const bk = $('#btnKonf'); if (bk) bk.onclick = () => konfirmasiBayarModal(belum);
+}
+function konfirmasiBayarModal(belum) {
+  const hariIni = new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 10);
+  const fs = [
+    { name: 'periode', label: 'Bulan yang dibayar', type: 'checks', options: belum.map((t) => ({ v: t.periode, l: blnID(t.periode) + ' - sisa ' + rp(t.sisa), n: t.sisa })) },
+    { name: 'jumlah', label: 'Jumlah yang ditransfer (Rp)', type: 'number', required: true, help: 'Terisi otomatis sesuai bulan yang dipilih. Ubah bila membayar sebagian.' },
+    { name: 'tgl_bayar', label: 'Tanggal transfer', type: 'date', value: hariIni },
+    { name: 'metode', label: 'Metode', type: 'select', options: ['Transfer', 'QRIS', 'Tunai'] },
+    { name: 'bukti', label: 'Foto bukti transfer', type: 'file', help: 'Foto akan dikecilkan otomatis. Pastikan nominal dan tanggal terlihat jelas.' },
+    { name: 'catatan', label: 'Catatan', hint: '(opsional)', type: 'text', max: 200 }
+  ];
+  formModal({
+    title: 'Kirim bukti pembayaran', fields: fs, submit: 'Kirim',
+    onOpen: (m) => { const h = () => { $('[name="jumlah"]', m).value = $$('[name="periode"]:checked', m).reduce((a, c) => a + Number(c.getAttribute('data-nilai')), 0) || ''; }; $$('[name="periode"]', m).forEach((c) => c.addEventListener('change', h)); },
+    onSubmit: async (v) => {
+      if (!v.periode.length) throw new Error('Pilih minimal satu bulan.');
+      if (!v.bukti) throw new Error('Unggah foto bukti transfer.');
+      const f = await foto(v.bukti);
+      await api('kkKonfirmasiKirim', { periode: v.periode, jumlah: Number(v.jumlah), tgl_bayar: v.tgl_bayar, metode: v.metode, catatan: v.catatan, bukti_b64: f.b64, bukti_mime: f.mime });
+      toast('Bukti terkirim. Bendahara akan memverifikasi.', 'good'); tampilWarga();
+    }
+  });
+}
+
+/* ================================================================
+   RUANG KERJA PENGURUS - kerangka, beranda, iuran, konfirmasi, data KK
+   ================================================================ */
+const KEU = ['admin', 'bendahara', 'ketua', 'sekretaris', 'dewas', 'ketua_rt'];
+const STAF_MENU = [
+  ['beranda', 'Beranda', null], ['pembayaran', 'Iuran & Tagihan', KEU], ['konfirmasi', 'Konfirmasi Warga', ['bendahara', 'admin']],
+  ['kk', 'Data Warga (KK)', KEU], ['rapb', 'RAPB & Pos', null], ['pengadaan', 'Pengadaan', null],
+  ['pengeluaran', 'Pengeluaran', ['admin', 'bendahara', 'ketua', 'sekretaris', 'dewas']], ['lain', 'Pendapatan Lain', ['admin', 'bendahara', 'ketua', 'dewas']],
+  ['danart', 'Dana RT', KEU], ['lpj', 'LPJ RT', KEU], ['pengumuman', 'Pengumuman', null],
+  ['laporan', 'Laporan Bulanan', ['bendahara', 'ketua', 'admin', 'sekretaris', 'dewas']], ['pemeriksaan', 'Pemeriksaan', ['dewas']],
+  ['pengguna', 'Pengguna', ['admin']], ['pengaturan', 'Pengaturan', ['admin']], ['audit', 'Jejak Audit', ['admin', 'dewas', 'ketua']]
+];
+const PERAN = { admin: 'Admin Sistem', ketua: 'Ketua', bendahara: 'Bendahara', sekretaris: 'Sekretaris', koordinator: 'Koordinator Bidang', dewas: 'Dewan Pengawas', ketua_rt: 'Pengurus RT' };
+const V = {};
+const R = (...r) => !!SESI && r.indexOf(SESI.profil.role) >= 0;
+const hariIniLokal = () => new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 10);
+let DASH = null, DASHT = 0;
+async function getDash(force) { if (!force && DASH && Date.now() - DASHT < 30000) return DASH; DASH = await api('dashboardStaf'); DASHT = Date.now(); return DASH; }
+function badges() {
+  const m = {}; if (DASH) DASH.tugas.forEach((t) => { m[t.menu] = (m[t.menu] || 0) + t.jumlah; });
+  $$('.side a').forEach((a) => { const b = $('.badge', a); if (b) b.remove(); const n = m[a.getAttribute('data-m')]; if (n) a.appendChild(el('<span class="badge" aria-label="' + n + ' tugas">' + n + '</span>')); });
+}
+async function bukaBukti(ref) {
+  if (!ref) return toast('Tidak ada bukti terlampir.');
+  if (ref.indexOf('http') === 0) { window.open(ref, '_blank', 'noopener'); return; }
+  try { const r = await api('getBukti', { ref: ref }); openModal({ title: 'Bukti', wide: true, body: '<img alt="Bukti transaksi" style="max-width:100%;border-radius:10px;display:block;margin:12px auto" src="' + r.data_url + '">', actions: [{ label: 'Tutup', kind: 'pri', onClick: () => true }] }); } catch (e) { galat(e); }
+}
+const btnBukti = (ref, teks) => (ref ? '<button class="btn sm" data-bukti="' + esc(ref) + '">' + (teks || 'Bukti') + '</button>' : '<span class="muted">-</span>');
+function ikatBukti(root) { $$('[data-bukti]', root).forEach((b) => { b.onclick = () => bukaBukti(b.getAttribute('data-bukti')); }); }
+async function coba(fn, ok) { try { const r = await fn(); if (ok) toast(ok, 'good'); DASHT = 0; return r === undefined ? true : r; } catch (e) { galat(e); return false; } }
+
+async function tampilStaf(menu) {
+  const app = $('#app');
+  if (!SESI || SESI.profil.tipe !== 'user') return loginView('user', 'Masuk Pengurus', 'Khusus Pengurus Paguyuban, Pengurus RT, dan Dewan Pengawas.', 'nama pengguna');
+  const role = SESI.profil.role;
+  if (SESI.profil.wajib_ganti_pin && !$('#modal .ov')) gantiPinModal(true);
+  const menuOk = STAF_MENU.filter((m) => !m[2] || m[2].indexOf(role) >= 0);
+  menu = menu || 'beranda';
+  if (!menuOk.some((m) => m[0] === menu)) menu = 'beranda';
+  if (!$('#stafMain')) {
+    app.innerHTML = '<div class="staff"><nav class="side no-print" aria-label="Menu pengurus">' + menuOk.map((m) => '<a href="#/staf/' + m[0] + '" data-m="' + m[0] + '">' + m[1] + '</a>').join('') + '</nav><div id="stafMain" style="min-width:0"></div></div>';
+  }
+  $$('.side a').forEach((a) => a.classList.toggle('on', a.getAttribute('data-m') === menu));
+  const main = $('#stafMain'), root = el('<div></div>');
+  main.innerHTML = ''; main.appendChild(root); root.innerHTML = '<div class="empty">Memuat...</div>';
+  try { await V[menu](root); } catch (e) { if (e.kode !== 'AUTH') root.innerHTML = '<div class="note bad"><span aria-hidden="true">!</span><div>' + esc(e.message) + '</div></div>'; return; }
+  getDash().then(badges).catch(() => { /* abaikan */ });
+}
+const judul = (t, sub, aksi) => '<div class="row" style="margin-bottom:12px"><div class="grow"><h1 style="font-size:22px">' + esc(t) + '</h1>' + (sub ? '<div class="t2 small">' + sub + '</div>' : '') + '</div>' + (aksi || '') + '</div>';
+const tabsHTML = (arr, aktif) => '<div class="tabs" style="margin-top:0">' + arr.map((t) => '<button class="tab' + (t[0] === aktif ? ' on' : '') + '" data-tab="' + t[0] + '">' + t[1] + '</button>').join('') + '</div>';
+
+/* ---------- beranda ---------- */
+V.beranda = async (root) => {
+  const d = await getDash(true), k = d.kpi, p = SESI.profil;
+  const tiles = p.role === 'ketua_rt'
+    ? [['KK di ' + k.rt, k.kk, ''], ['Lunas bulan ini', k.lunas + ' KK', k.persen + '% dari nilai tagihan'], ['KK menunggak', k.tunggakan_kk, ''], ['Dana RT diterima tahun ini', rp(k.dana_diterima), '']]
+    : [['Saldo kas', rp(k.saldo_kas), ''], ['IPL bulan ini', rp(k.ipl_bulan_ini), k.lunas + ' dari ' + k.kk + ' KK lunas (' + k.persen + '%)'], ['KK menunggak', k.tunggakan_kk, 'lewat jatuh tempo'], ['Peran Anda', PERAN[p.role] || p.role, p.jabatan || '']];
+  root.innerHTML = judul('Selamat datang, ' + p.nama, PERAN[p.role] + (p.rt ? ' ' + p.rt : '')) +
+    '<div class="grid g4">' + tiles.map((t) => '<div class="card stat"><div class="lbl">' + esc(t[0]) + '</div><div class="val num" style="font-size:22px">' + esc(t[1]) + '</div><div class="note">' + esc(t[2]) + '</div></div>').join('') + '</div>' +
+    '<h2 class="sec">Perlu tindakan</h2>' + (d.tugas.length ? '<div class="stack">' + d.tugas.map((t) => '<a class="note warn" style="text-decoration:none;color:inherit" href="#/staf/' + t.menu + '"><span aria-hidden="true">!</span><div><b>' + t.jumlah + '</b> &middot; ' + esc(t.teks) + '</div></a>').join('') + '</div>' : '<div class="note good"><span aria-hidden="true">✓</span><div>Tidak ada tugas yang menunggu Anda.</div></div>');
+  badges();
+};
+
+/* ---------- iuran & tagihan ---------- */
+const PB = { tab: 'status', periode: '', rt: '', q: '' };
+function kartuPinModal(list, judulM) {
+  const isi = '<div class="note warn" style="margin:12px 0"><span aria-hidden="true">!</span><div>PIN hanya ditampilkan sekali. Cetak atau unduh sekarang, lalu serahkan kepada warga secara langsung. Warga wajib mengganti PIN saat pertama masuk.</div></div><div class="grid g2" id="cetakArea">' +
+    list.map((x) => '<div class="kartu"><b>' + esc(x.nama_kepala) + '</b><div class="small t2">' + esc(x.alamat) + ' &middot; ' + esc(x.rt) + '</div><div style="margin-top:6px">ID: <b class="num">' + esc(x.id_kk) + '</b><br>PIN: <b class="num" style="font-size:18px;letter-spacing:.1em">' + esc(x.pin) + '</b></div><div class="small muted" style="margin-top:4px">Masuk di halaman Portal Warga</div></div>').join('') + '</div>';
+  openModal({ title: judulM || 'Kartu PIN', wide: true, body: isi, actions: [{ label: 'Unduh CSV', onClick: () => { csvUnduh('kartu-pin.csv', ['ID', 'RT', 'Nama', 'Alamat', 'PIN'], list.map((x) => [x.id_kk, x.rt, x.nama_kepala, x.alamat, x.pin])); return false; } }, { label: 'Cetak', onClick: () => { cetak(); return false; } }, { label: 'Selesai', kind: 'pri', onClick: () => true }] });
+}
+function catatBayarModal(r, periode, sesudah) {
+  formModal({
+    title: 'Catat pembayaran ' + r.id_kk, intro: esc(r.nama_kepala) + ' &middot; ' + esc(r.alamat), submit: 'Catat',
+    fields: [{ name: 'periode', label: 'Untuk bulan', type: 'month', value: periode }, { name: 'jumlah', label: 'Jumlah diterima (Rp)', type: 'number', value: r.sisa || '', required: true, help: 'Untuk beberapa bulan sekaligus, catat satu per satu.' }, { name: 'tanggal', label: 'Tanggal terima', type: 'date', value: hariIniLokal() }, { name: 'metode', label: 'Metode', type: 'select', options: ['Tunai', 'Transfer', 'QRIS'] }, { name: 'ref', label: 'Referensi / nomor kuitansi', hint: '(opsional)', max: 80 }, { name: 'bukti', label: 'Foto bukti / kuitansi', hint: '(opsional)', type: 'file' }],
+    onSubmit: async (v) => {
+      const f = v.bukti ? await foto(v.bukti) : null;
+      await api('bayarCatat', { id_kk: r.id_kk, tanggal: v.tanggal, metode: v.metode, ref: v.ref, items: [{ periode: v.periode, jumlah: Number(v.jumlah) }], bukti_b64: f ? f.b64 : '', bukti_mime: f ? f.mime : '' });
+      toast('Pembayaran dicatat.', 'good'); DASHT = 0; sesudah();
+    }
+  });
+}
+function pesanIngat(t, nama, kontak) {
+  return 'Assalamualaikum Bapak/Ibu ' + t.nama_kepala + ' (' + t.alamat + ').\nKami mengingatkan IPL ' + nama + ' untuk bulan ' + t.periode.map(blnID).join(', ') + ' sebesar ' + rp(t.total) + ' belum tercatat lunas. Mohon berkenan menyelesaikan pembayaran, atau abaikan pesan ini bila sudah membayar. Bukti transfer dapat dikirim melalui Portal Warga. Terima kasih.\n' + (kontak || '');
+}
+V.pembayaran = async (root) => {
+  if (!PB.periode) PB.periode = hariIniLokal().slice(0, 7);
+  const tabs = [['status', 'Status tagihan'], ['tunggakan', 'Tunggakan']].concat(R('ketua_rt') ? [] : [['riwayat', 'Riwayat pembayaran']]);
+  root.innerHTML = judul('Iuran & Tagihan') + tabsHTML(tabs, PB.tab) + '<div id="pbBody"><div class="empty">Memuat...</div></div>';
+  $$('[data-tab]', root).forEach((b) => { b.onclick = () => { PB.tab = b.getAttribute('data-tab'); V.pembayaran(root); }; });
+  const body = $('#pbBody', root), ulang = () => V.pembayaran(root);
+  if (PB.tab === 'status') {
+    const d = await api('tagihanStatus', { periode: PB.periode });
+    const rts = Array.from(new Set(d.daftar.map((x) => x.rt))).sort();
+    const list = d.daftar.filter((x) => (!PB.rt || x.rt === PB.rt) && (!PB.q || (x.nama_kepala + ' ' + x.alamat + ' ' + x.id_kk).toLowerCase().indexOf(PB.q.toLowerCase()) >= 0));
+    const jum = list.reduce((a, x) => ({ n: a.n + x.nominal, d: a.d + x.dibayar, s: a.s + x.sisa }), { n: 0, d: 0, s: 0 });
+    body.innerHTML = '<div class="filters"><div><label class="f" for="pbPer">Bulan</label><input type="month" id="pbPer" value="' + PB.periode + '"></div>' + (R('ketua_rt') ? '' : '<div><label class="f" for="pbRT">RT</label><select id="pbRT"><option value="">Semua RT</option>' + rts.map((x) => '<option' + (x === PB.rt ? ' selected' : '') + '>' + x + '</option>').join('') + '</select></div>') + '<div><label class="f" for="pbQ">Cari</label><input type="text" id="pbQ" value="' + esc(PB.q) + '" placeholder="nama / alamat / ID"></div>' + (R('bendahara', 'admin') ? '<div><button class="btn" id="pbBuat">Buat tagihan bulan ini</button></div>' : '') + '</div>' +
+      (d.belum_dibuat ? '<div class="note warn" style="margin-bottom:12px"><span aria-hidden="true">!</span><div>Tagihan bulan ' + blnID(PB.periode) + ' belum dibuat. ' + (R('bendahara', 'admin') ? 'Klik "Buat tagihan bulan ini". Tagihan juga dibuat otomatis tiap tanggal 1 bila pemicu otomatis terpasang.' : 'Bendahara perlu membuatnya.') + '</div></div>' : '') +
+      tableHTML([{ h: 'ID', k: 'id_kk', cls: 'nw' }, { h: 'Nama kepala keluarga', k: 'nama_kepala' }, { h: 'Alamat', k: 'alamat' }, { h: 'Tagihan', cls: 'r num', f: (r) => rp(r.nominal) }, { h: 'Dibayar', cls: 'r num', f: (r) => rp(r.dibayar) }, { h: 'Sisa', cls: 'r num', f: (r) => rp(r.sisa) }, { h: 'Status', f: (r) => chip(r.status) }, { h: '', f: (r) => (R('bendahara') && r.sisa > 0 ? '<button class="btn sm" data-catat="' + r.id_kk + '">Catat bayar</button>' : '') }], list, { empty: 'Tidak ada data.', foot: '<td colspan="3">Total ' + list.length + ' KK</td><td class="r num">' + rp(jum.n) + '</td><td class="r num">' + rp(jum.d) + '</td><td class="r num">' + rp(jum.s) + '</td><td colspan="2"></td>' });
+    $('#pbPer', body).onchange = (e) => { if (e.target.value) { PB.periode = e.target.value; ulang(); } };
+    const sr = $('#pbRT', body); if (sr) sr.onchange = () => { PB.rt = sr.value; ulang(); };
+    const sq = $('#pbQ', body); sq.onchange = () => { PB.q = sq.value; ulang(); };
+    const bb = $('#pbBuat', body); if (bb) bb.onclick = async () => { if (await konfirmasi('Buat tagihan', 'Buat tagihan IPL untuk seluruh KK aktif bulan ' + blnID(PB.periode) + '? KK yang sudah punya tagihan bulan ini tidak diduplikasi.', 'Buat')) { const r = await coba(() => api('tagihanBuat', { periode: PB.periode })); if (r) { toast('Tagihan baru dibuat: ' + r.dibuat + ' KK.', 'good'); ulang(); } } };
+    $$('[data-catat]', body).forEach((b) => { b.onclick = () => catatBayarModal(d.daftar.filter((x) => x.id_kk === b.getAttribute('data-catat'))[0], PB.periode, ulang); });
+  } else if (PB.tab === 'tunggakan') {
+    const t = await api('tunggakanList', {});
+    const nama = ($('#brandName') || {}).textContent || 'Paguyuban';
+    body.innerHTML = '<div class="row" style="margin-bottom:10px"><div class="grow t2 small">' + t.length + ' KK menunggak, total ' + rp(t.reduce((a, x) => a + x.total, 0)) + '. Nama penunggak hanya terlihat oleh pengurus berwenang; jangan dipublikasikan.</div><button class="btn sm" id="tgCsv">Unduh CSV</button></div>' +
+      tableHTML([{ h: 'ID', k: 'id_kk', cls: 'nw' }, { h: 'Nama', k: 'nama_kepala' }, { h: 'Alamat', k: 'alamat' }, { h: 'Bulan menunggak', cls: 'r', f: (r) => r.bulan }, { h: 'Periode', f: (r) => esc(r.periode.map((p) => BLN3[Number(p.slice(5, 7)) - 1] + ' ' + p.slice(2, 4)).join(', ')) }, { h: 'Total', cls: 'r num', f: (r) => rp(r.total) }, { h: 'HP', k: 'no_hp' }, { h: '', f: (r, i) => '<button class="btn sm" data-ing="' + i + '">Salin pengingat</button>' }], t, { empty: 'Tidak ada tunggakan.' });
+    $('#tgCsv', body).onclick = () => csvUnduh('tunggakan.csv', ['ID', 'RT', 'Nama', 'Alamat', 'Bulan', 'Periode', 'Total', 'HP'], t.map((x) => [x.id_kk, x.rt, x.nama_kepala, x.alamat, x.bulan, x.periode.join(' '), x.total, x.no_hp]));
+    $$('[data-ing]', body).forEach((b) => { b.onclick = () => salinTeks(pesanIngat(t[Number(b.getAttribute('data-ing'))], nama, PUB ? PUB.kontak : '')); });
+  } else {
+    const l = await api('bayarList', {});
+    body.innerHTML = '<p class="t2 small">250 pembayaran terakhir.</p>' + tableHTML([{ h: 'Tanggal', cls: 'nw', f: (r) => tglID(r.tanggal) }, { h: 'Bulan', f: (r) => blnID(r.periode) }, { h: 'KK', f: (r) => esc(r.id_kk) + '<br><span class="small muted">' + esc(r.nama_kepala) + '</span>' }, { h: 'Jumlah', cls: 'r num', f: (r) => rp(r.jumlah) }, { h: 'Metode', k: 'metode' }, { h: 'Status', f: (r) => chip(r.status) }, { h: 'Bukti', f: (r) => btnBukti(r.bukti) }, { h: '', f: (r) => (R('bendahara', 'ketua') && r.status !== 'Dibatalkan' ? '<button class="btn sm bad" data-batal="' + r.id_bayar + '">Batalkan</button>' : '') }], l, { empty: 'Belum ada pembayaran.' });
+    ikatBukti(body);
+    $$('[data-batal]', body).forEach((b) => { b.onclick = () => formModal({ title: 'Batalkan pembayaran', fields: [{ name: 'alasan', label: 'Alasan pembatalan', type: 'textarea', max: 150, required: true }], submit: 'Batalkan pembayaran', onSubmit: async (v) => { await api('bayarBatal', { id_bayar: b.getAttribute('data-batal'), alasan: v.alasan }); toast('Pembayaran dibatalkan.', 'good'); DASHT = 0; ulang(); } }); });
+  }
+};
+
+/* ---------- konfirmasi pembayaran warga ---------- */
+let KF_STATUS = 'Menunggu';
+V.konfirmasi = async (root) => {
+  const l = await api('konfirmasiList', { status: KF_STATUS });
+  root.innerHTML = judul('Konfirmasi pembayaran warga', 'Bukti transfer yang dikirim warga dari portal. Periksa mutasi rekening sebelum menerima.') +
+    '<div class="filters"><div><label class="f" for="kfSt">Status</label><select id="kfSt">' + ['Menunggu', 'Diterima', 'Ditolak', ''].map((s) => '<option value="' + s + '"' + (s === KF_STATUS ? ' selected' : '') + '>' + (s || 'Semua') + '</option>').join('') + '</select></div></div>' +
+    tableHTML([{ h: 'Dikirim', cls: 'nw', f: (r) => tglID(r.tgl_kirim) }, { h: 'KK', f: (r) => esc(r.id_kk) + '<br><span class="small muted">' + esc(r.nama_kepala) + '</span>' }, { h: 'Untuk bulan', f: (r) => esc(r.periode.split(',').map((p) => BLN3[Number(p.slice(5, 7)) - 1] + ' ' + p.slice(2, 4)).join(', ')) }, { h: 'Jumlah', cls: 'r num', f: (r) => rp(r.jumlah) }, { h: 'Tgl transfer', cls: 'nw', f: (r) => tglID(r.tgl_bayar) }, { h: 'Metode', k: 'metode' }, { h: 'Bukti', f: (r) => btnBukti(r.bukti, 'Lihat') }, { h: 'Status', f: (r) => chip(r.status) + (r.catatan_proses ? '<div class="small muted">' + esc(r.catatan_proses) + '</div>' : '') }, { h: '', f: (r) => (r.status === 'Menunggu' && R('bendahara') ? '<div class="row" style="gap:6px;flex-wrap:nowrap"><button class="btn sm ok" data-terima="' + r.id_konf + '">Terima</button><button class="btn sm bad" data-tolak="' + r.id_konf + '">Tolak</button></div>' : '') }], l, { empty: 'Tidak ada konfirmasi.' });
+  ikatBukti(root);
+  $('#kfSt', root).onchange = (e) => { KF_STATUS = e.target.value; V.konfirmasi(root); };
+  $$('[data-terima]', root).forEach((b) => { b.onclick = async () => { const r = l.filter((x) => x.id_konf === b.getAttribute('data-terima'))[0]; if (await konfirmasi('Terima pembayaran', 'Terima ' + rp(r.jumlah) + ' dari ' + r.nama_kepala + ' (' + r.id_kk + ')? Pembayaran akan tercatat pada tagihan yang bersangkutan.', 'Terima', 'ok')) { if (await coba(() => api('konfirmasiProses', { id_konf: r.id_konf, keputusan: 'Terima' }), 'Pembayaran diterima dan dicatat.')) V.konfirmasi(root); } }; });
+  $$('[data-tolak]', root).forEach((b) => { b.onclick = () => formModal({ title: 'Tolak konfirmasi', fields: [{ name: 'catatan', label: 'Alasan penolakan (dibaca warga)', type: 'textarea', max: 150, required: true }], submit: 'Tolak', onSubmit: async (v) => { await api('konfirmasiProses', { id_konf: b.getAttribute('data-tolak'), keputusan: 'Tolak', catatan_proses: v.catatan }); toast('Konfirmasi ditolak.'); DASHT = 0; V.konfirmasi(root); } }); });
+};
+
+/* ---------- data KK ---------- */
+let KK_Q = '', KK_RT = '';
+const KK_FIELDS = (d) => [
+  { name: 'rt', label: 'RT', value: d.rt || '', required: true, max: 10, help: 'Contoh: RT01. Nomor KK dibuat otomatis, mis. RT01-001.', placeholder: 'RT01' },
+  { name: 'alamat', label: 'Alamat / blok', value: d.alamat || '', required: true, max: 80 },
+  { name: 'nama_kepala', label: 'Nama kepala keluarga', value: d.nama_kepala || '', required: true, max: 80 },
+  { name: 'status_hunian', label: 'Status hunian', type: 'select', options: ['Pemilik', 'Penghuni'], value: d.status_hunian },
+  { name: 'tarif_ipl', label: 'Tarif IPL khusus (Rp)', type: 'number', value: d.tarif_ipl || '', hint: '(kosongkan = tarif standar)' },
+  { name: 'no_hp', label: 'No. HP / WhatsApp', value: d.no_hp || '', max: 20 },
+  { name: 'mulai_iuran', label: 'Mulai iuran (bulan)', type: 'month', value: d.mulai_iuran || '' }
+].concat(d.id_kk ? [{ name: 'aktif', label: 'KK aktif (menghuni dan berkewajiban iuran)', type: 'checkbox', value: d.aktif !== 'Tidak' }] : []);
+V.kk = async (root) => {
+  const l = await api('kkList', {}), edit = R('admin', 'sekretaris');
+  const rts = Array.from(new Set(l.map((x) => x.rt))).sort();
+  const f = l.filter((x) => (!KK_RT || x.rt === KK_RT) && (!KK_Q || (x.nama_kepala + ' ' + x.alamat + ' ' + x.id_kk).toLowerCase().indexOf(KK_Q.toLowerCase()) >= 0));
+  root.innerHTML = judul('Data warga (KK)', l.length + ' keluarga terdaftar', edit ? '<button class="btn" id="kkImpor">Impor banyak KK</button><button class="btn pri" id="kkBaru">Tambah KK</button>' : '') +
+    '<div class="filters">' + (R('ketua_rt') ? '' : '<div><label class="f" for="kkRT">RT</label><select id="kkRT"><option value="">Semua RT</option>' + rts.map((x) => '<option' + (x === KK_RT ? ' selected' : '') + '>' + x + '</option>').join('') + '</select></div>') + '<div><label class="f" for="kkQ">Cari</label><input type="text" id="kkQ" value="' + esc(KK_Q) + '" placeholder="nama / alamat / ID"></div></div>' +
+    tableHTML([{ h: 'ID', k: 'id_kk', cls: 'nw' }, { h: 'Nama kepala keluarga', k: 'nama_kepala' }, { h: 'Alamat', k: 'alamat' }, { h: 'Hunian', k: 'status_hunian' }, { h: 'Tarif', cls: 'r num', f: (r) => (r.tarif_ipl ? rp(r.tarif_ipl) : '<span class="muted">standar</span>') }, { h: 'Mulai', k: 'mulai_iuran', cls: 'nw' }, { h: 'HP', k: 'no_hp' }, { h: 'Aktif', f: (r) => (r.aktif === 'Ya' ? chip('Diterima').replace('Diterima', 'Aktif') : '<span class="chip">Nonaktif</span>') }, { h: '', f: (r) => (edit ? '<div class="row" style="gap:6px;flex-wrap:nowrap"><button class="btn sm" data-ubah="' + r.id_kk + '">Ubah</button><button class="btn sm" data-reset="' + r.id_kk + '">Reset PIN</button></div>' : '') }], f, { empty: 'Belum ada data KK.' });
+  const sr = $('#kkRT', root); if (sr) sr.onchange = () => { KK_RT = sr.value; V.kk(root); };
+  $('#kkQ', root).onchange = (e) => { KK_Q = e.target.value; V.kk(root); };
+  if (!edit) return;
+  $('#kkBaru', root).onclick = () => formModal({ title: 'Tambah KK', fields: KK_FIELDS({}), onSubmit: async (v) => { const r = await api('kkSimpan', { data: Object.assign({}, v) }); DASHT = 0; V.kk(root); kartuPinModal([{ id_kk: r.id_kk, rt: v.rt.toUpperCase(), nama_kepala: v.nama_kepala, alamat: v.alamat, pin: r.pin }], 'KK ditambahkan'); return false; } });
+  $$('[data-ubah]', root).forEach((b) => { b.onclick = () => { const d = l.filter((x) => x.id_kk === b.getAttribute('data-ubah'))[0]; formModal({ title: 'Ubah ' + d.id_kk, fields: KK_FIELDS(d).filter((x) => x.name !== 'rt'), onSubmit: async (v) => { await api('kkSimpan', { data: Object.assign({ id_kk: d.id_kk }, v) }); toast('Data KK disimpan.', 'good'); V.kk(root); } }); }; });
+  $$('[data-reset]', root).forEach((b) => { b.onclick = async () => { const d = l.filter((x) => x.id_kk === b.getAttribute('data-reset'))[0]; if (await konfirmasi('Reset PIN', 'Buat PIN baru untuk ' + d.nama_kepala + ' (' + d.id_kk + ')? PIN lama tidak berlaku lagi.', 'Reset PIN')) { const r = await coba(() => api('kkResetPin', { id_kk: d.id_kk })); if (r) kartuPinModal([{ id_kk: d.id_kk, rt: d.rt, nama_kepala: d.nama_kepala, alamat: d.alamat, pin: r.pin }], 'PIN baru'); } }; });
+  $('#kkImpor', root).onclick = () => formModal({
+    title: 'Impor banyak KK', wide: true, submit: 'Impor',
+    intro: 'Tempel data dari Excel/Google Sheets. Satu KK per baris, kolom berurutan: <b>RT, Alamat, Nama kepala keluarga, Status hunian (Pemilik/Penghuni), Tarif khusus (boleh kosong), No. HP, Mulai iuran (YYYY-MM, boleh kosong)</b>. Baris judul otomatis dilewati. Nomor KK dan PIN dibuat otomatis.',
+    fields: [{ name: 'teks', label: 'Data', type: 'textarea', max: 60000, required: true }],
+    onSubmit: async (v) => {
+      const rows = v.teks.split(/\r?\n/).map((s) => s.trim()).filter(Boolean).map((s) => s.split(/\t|;|,(?=(?:[^"]*"[^"]*")*[^"]*$)/).map((c) => c.trim().replace(/^"|"$/g, '')));
+      if (rows.length && /^rt$/i.test(rows[0][0])) rows.shift();
+      if (!rows.length) throw new Error('Tidak ada baris data.');
+      const r = await api('kkImpor', { rows: rows.map((c) => ({ rt: c[0], alamat: c[1], nama_kepala: c[2], status_hunian: c[3], tarif_ipl: c[4], no_hp: c[5], mulai_iuran: c[6] })) });
+      DASHT = 0; V.kk(root); kartuPinModal(r.kartu, r.jumlah + ' KK diimpor'); return false;
+    }
+  });
+};
+
+/* ================================================================
+   RUANG KERJA - RAPB, pengadaan, pengeluaran, pendapatan lain, Dana RT, LPJ
+   ================================================================ */
+const PEMOHON = ['ketua', 'bendahara', 'sekretaris', 'koordinator', 'admin'];
+const selPos = (arr, tanpaRT) => arr.filter((p) => !(tanpaRT && p.kode === 'RT')).map((p) => ({ v: p.kode, l: p.nama }));
+
+/* ---------- RAPB & pos ---------- */
+let RB = { tahun: '', tab: 'item' };
+V.rapb = async (root) => {
+  const d = await api('rapbList', { tahun: RB.tahun || undefined }); RB.tahun = d.tahun;
+  const edit = R('bendahara', 'admin');
+  const tabs = [['item', 'Item RAPB'], ['pos', 'Porsi per pos']];
+  const totA = d.item.reduce((a, x) => a + x.anggaran, 0), totR = d.item.reduce((a, x) => a + x.realisasi, 0);
+  let isi;
+  if (RB.tab === 'item') {
+    isi = tableHTML([{ h: 'Pos', f: (r) => esc(posNamaDari(d.pos, r.pos)) }, { h: 'Uraian', f: (r) => esc(r.uraian) + (r.sifat === 'Rutin' ? ' <span class="chip">Rutin</span>' : '') }, { h: 'Anggaran', cls: 'r num', f: (r) => rp(r.anggaran) }, { h: 'Realisasi', cls: 'r num', f: (r) => rp(r.realisasi) }, { h: 'Sisa', cls: 'r num', f: (r) => rp(r.sisa) }, { h: '', f: (r) => (edit ? '<div class="row" style="gap:6px;flex-wrap:nowrap"><button class="btn sm" data-ub="' + r.id_item + '">Ubah</button><button class="btn sm bad" data-hp="' + r.id_item + '">Hapus</button></div>' : '') }], d.item, { empty: 'Belum ada item RAPB tahun ini.', foot: '<td colspan="2">Total belanja Paguyuban</td><td class="r num">' + rp(totA) + '</td><td class="r num">' + rp(totR) + '</td><td class="r num">' + rp(totA - totR) + '</td><td></td>' }) +
+      '<p class="help">Target penerimaan IPL setahun (seluruh KK aktif × tarif × 12): ' + rp(d.target_ipl) + '. Dana RT tidak dimasukkan sebagai item karena dihitung otomatis.</p>';
+  } else {
+    isi = tableHTML([{ h: 'Pos', k: 'nama' }, { h: 'Pengelola', k: 'pengelola' }, { h: 'Porsi', cls: 'r', f: (r) => r.persen + '%' }, { h: 'Target alokasi', cls: 'r num', f: (r) => rp(d.target_ipl * r.persen / 100) }, { h: 'RAPB tersusun', cls: 'r num', f: (r) => rp(r.rapb) }, { h: 'Selisih', cls: 'r num', f: (r) => { const s = d.target_ipl * r.persen / 100 - r.rapb; return r.kode === 'RT' ? '<span class="muted">otomatis</span>' : (s < 0 ? '<span class="chip bad"><span aria-hidden="true">✕</span>lebih ' + rp(-s) + '</span>' : rp(s)); } }], d.pos) +
+      (R('admin') ? '<div style="margin-top:12px"><button class="btn" id="rbPorsi">Ubah porsi pos</button></div>' : '<p class="help">Porsi hanya dapat diubah Admin atas keputusan Musyawarah Warga bila di luar rentang ART.</p>');
+  }
+  root.innerHTML = judul('RAPB & porsi anggaran', 'Rencana Anggaran Pendapatan dan Belanja tahun ' + d.tahun, edit && RB.tab === 'item' ? '<button class="btn pri" id="rbBaru">Tambah item</button>' : '') +
+    '<div class="filters"><div><label class="f" for="rbThn">Tahun</label><input type="number" id="rbThn" value="' + d.tahun + '" min="2000" max="2100" style="width:110px"></div></div>' + tabsHTML(tabs, RB.tab) + isi;
+  $('#rbThn', root).onchange = (e) => { RB.tahun = e.target.value; V.rapb(root); };
+  $$('[data-tab]', root).forEach((b) => { b.onclick = () => { RB.tab = b.getAttribute('data-tab'); V.rapb(root); }; });
+  const posOpt = selPos(d.pos, true);
+  const itemForm = (x) => [{ name: 'pos', label: 'Pos anggaran', type: 'select', options: posOpt, value: x.pos }, { name: 'uraian', label: 'Uraian kegiatan / belanja', value: x.uraian || '', required: true, max: 120 }, { name: 'anggaran', label: 'Anggaran setahun (Rp)', type: 'number', value: x.anggaran || '', required: true }, { name: 'sifat', label: 'Sifat belanja', type: 'select', options: [{ v: 'Sekali', l: 'Sekali / proyek' }, { v: 'Rutin', l: 'Rutin bulanan (gaji, listrik, dst.)' }], value: x.sifat || 'Sekali', help: 'Belanja rutin boleh dicatat langsung tiap bulan tanpa pengadaan, maksimal 110% dari anggaran bulanan.' }];
+  const nb = $('#rbBaru', root); if (nb) nb.onclick = () => formModal({ title: 'Tambah item RAPB', fields: itemForm({}), onSubmit: async (v) => { await api('rapbSimpan', { data: Object.assign({ tahun: d.tahun }, v) }); toast('Item ditambahkan.', 'good'); V.rapb(root); } });
+  $$('[data-ub]', root).forEach((b) => { b.onclick = () => { const x = d.item.filter((i) => i.id_item === b.getAttribute('data-ub'))[0]; formModal({ title: 'Ubah item RAPB', fields: itemForm(x), onSubmit: async (v) => { await api('rapbSimpan', { data: Object.assign({ tahun: d.tahun, id_item: x.id_item }, v) }); toast('Item disimpan.', 'good'); V.rapb(root); } }); }; });
+  $$('[data-hp]', root).forEach((b) => { b.onclick = async () => { if (await konfirmasi('Hapus item', 'Hapus item RAPB ini? Item yang sudah dipakai transaksi tidak dapat dihapus.', 'Hapus', 'bad')) { if (await coba(() => api('rapbHapus', { id_item: b.getAttribute('data-hp') }), 'Item dihapus.')) V.rapb(root); } }; });
+  const bp = $('#rbPorsi', root);
+  if (bp) bp.onclick = async () => {
+    const ps = await api('posList', {});
+    formModal({
+      title: 'Ubah porsi pos anggaran', intro: 'Jumlah seluruh porsi harus tepat 100%. Rentang di dalam kurung adalah batas menurut ART; di luar rentang perlu berita acara Musyawarah Warga.',
+      fields: ps.map((p) => ({ name: 'p_' + p.kode, label: p.nama + ' (' + p.min + '-' + p.max + '%)', type: 'number', value: p.persen, required: true })).concat([{ name: 'no_ba', label: 'Nomor berita acara Musyawarah Warga', hint: '(wajib bila di luar rentang)', max: 60 }]),
+      onSubmit: async (v) => { await api('posSimpan', { rows: ps.map((p) => ({ kode: p.kode, persen: Number(v['p_' + p.kode]) })), no_ba: v.no_ba }); toast('Porsi disimpan.', 'good'); V.rapb(root); }
+    });
+  };
+};
+const posNamaDari = (arr, k) => { const p = arr.filter((x) => x.kode === k)[0]; return p ? p.nama : k; };
+
+/* ---------- pengadaan ---------- */
+let PG_ST = '';
+function pengadaanKartu(p, ctx) {
+  const me = SESI.profil, role = me.role;
+  const termurah = p.penawaran.length ? Math.min.apply(null, p.penawaran.map((w) => w.harga)) : 0;
+  const bisaKelola = p.pemohon === me.id || role === 'bendahara' || role === 'admin';
+  const sudah = p.persetujuan.map((x) => x.peran);
+  const btn = [];
+  if (p.status === 'Diajukan' && bisaKelola && PEMOHON.indexOf(role) >= 0) { btn.push('<button class="btn sm" data-a="tawar" data-id="' + p.id_pengadaan + '">Tambah penawaran</button>', '<button class="btn sm pri" data-a="kirim" data-id="' + p.id_pengadaan + '">Kirim untuk persetujuan</button>'); }
+  if (p.status === 'Menunggu Persetujuan' && p.perlu.indexOf(role) >= 0 && sudah.indexOf(role) < 0 && p.pemohon !== me.id) btn.push('<button class="btn sm ok" data-a="setuju" data-id="' + p.id_pengadaan + '">Setujui</button>', '<button class="btn sm bad" data-a="tolak" data-id="' + p.id_pengadaan + '">Tolak</button>');
+  if (p.status === 'Disetujui' && role === 'bendahara') btn.push('<button class="btn sm pri" data-a="beli" data-id="' + p.id_pengadaan + '">Catat pembelian & unggah nota</button>');
+  if (['Diajukan', 'Menunggu Persetujuan', 'Disetujui'].indexOf(p.status) >= 0 && bisaKelola && PEMOHON.indexOf(role) >= 0) btn.push('<button class="btn sm" data-a="batal" data-id="' + p.id_pengadaan + '">Batalkan</button>');
+  const rantai = '<div class="chain">' + p.perlu.map((r) => { const a = p.persetujuan.filter((x) => x.peran === r)[0]; if (!a) return '<span class="step">' + esc(PERAN[r]) + ': menunggu</span>'; return a.keputusan === 'Setuju' ? '<span class="step done"><span aria-hidden="true">✓</span> ' + esc(PERAN[r]) + ' (' + esc(a.nama) + ')</span>' : '<span class="step no"><span aria-hidden="true">✕</span> ' + esc(PERAN[r]) + ' menolak: ' + esc(a.catatan) + '</span>'; }).join('') + '</div>';
+  return '<div class="pg"><div class="row"><h3 class="grow">' + esc(p.uraian) + '</h3>' + chip(p.status) + '</div>' +
+    '<div class="pill-row small t2" style="margin-top:4px"><span class="chip ' + (p.tingkat === 'D' ? 'bad' : 'info') + '">' + TINGKAT[p.tingkat] + '</span><span>' + esc(ctx.posNama(p.pos)) + '</span><span>Pemohon: ' + esc(p.pemohon_nama) + ', ' + tglID(p.tgl_ajuan) + '</span></div>' +
+    '<div style="margin-top:6px">' + esc(p.alasan) + '</div>' +
+    '<div class="row" style="margin-top:8px"><div>Perkiraan <b class="num">' + rp(p.jumlah_perkiraan) + '</b></div>' + (p.vendor_terpilih ? '<div>Penyedia terpilih: <b>' + esc(p.vendor_terpilih) + '</b></div>' : '') + (p.nilai_final ? '<div>Dibayar <b class="num">' + rp(p.nilai_final) + '</b></div>' : '') + (p.nota ? '<div><a href="' + esc(p.nota) + '" target="_blank" rel="noopener">Nota</a></div>' : '') + '</div>' +
+    (p.penawaran.length ? '<div class="small" style="margin-top:8px"><b>Penawaran:</b> ' + p.penawaran.map((w) => esc(w.vendor) + ' ' + rp(w.harga) + (w.harga === termurah ? ' <span class="chip good">termurah</span>' : '') + (p.status === 'Diajukan' && bisaKelola ? ' <button class="x" style="font-size:16px" title="Hapus penawaran" data-a="hapusw" data-id="' + p.id_pengadaan + '" data-w="' + w.id + '">&times;</button>' : '')).join(' &middot; ') + '</div>' : '') +
+    (p.perlu.length && p.status !== 'Diajukan' ? rantai : '') + (p.perlu_ba ? '<div class="help">Wajib berita acara ' + esc(p.perlu_ba) + (p.no_ba ? ': ' + esc(p.no_ba) : '') + '</div>' : '') + (p.alasan_tunggal ? '<div class="help">Alasan penawaran kurang: ' + esc(p.alasan_tunggal) + '</div>' : '') + (p.catatan ? '<div class="help">' + esc(p.catatan) + '</div>' : '') +
+    (btn.length ? '<div class="row" style="margin-top:10px;gap:8px">' + btn.join('') + '</div>' : '') + '</div>';
+}
+V.pengadaan = async (root) => {
+  const [l, pos] = await Promise.all([api('pengadaanList', { status: PG_ST || undefined }), api('posList', {})]);
+  const ctx = { posNama: (k) => posNamaDari(pos, k) };
+  root.innerHTML = judul('Pengadaan barang & jasa', 'Pengajuan, penawaran, persetujuan bertingkat, dan bukti pembelian.', PEMOHON.indexOf(SESI.profil.role) >= 0 ? '<button class="btn pri" id="pgBaru">Ajukan pengadaan</button>' : '') +
+    '<div class="filters"><div><label class="f" for="pgSt">Status</label><select id="pgSt">' + ['', 'Diajukan', 'Menunggu Persetujuan', 'Disetujui', 'Selesai', 'Ditolak', 'Dibatalkan'].map((s) => '<option value="' + s + '"' + (s === PG_ST ? ' selected' : '') + '>' + (s || 'Semua status') + '</option>').join('') + '</select></div></div>' +
+    (l.map((p) => pengadaanKartu(p, ctx)).join('') || '<div class="tbl-wrap"><div class="empty">Belum ada pengadaan.</div></div>');
+  $('#pgSt', root).onchange = (e) => { PG_ST = e.target.value; V.pengadaan(root); };
+  const ulang = () => { DASHT = 0; V.pengadaan(root); };
+  const cari = (id) => l.filter((p) => p.id_pengadaan === id)[0];
+  const baru = $('#pgBaru', root);
+  if (baru) baru.onclick = async () => {
+    const rb = await api('rapbList', {});
+    const opsiItem = (kode) => [{ v: '', l: '(di luar RAPB) - otomatis Tingkat 4' }].concat(rb.item.filter((i) => i.pos === kode).map((i) => ({ v: i.id_item, l: i.uraian + ' - sisa ' + rp(i.sisa) })));
+    const pilihan = selPos(pos, true);
+    formModal({
+      title: 'Ajukan pengadaan', intro: 'Tingkat persetujuan ditentukan otomatis dari nilai perkiraan terhadap total RAPB.',
+      fields: [{ name: 'pos', label: 'Pos anggaran', type: 'select', options: pilihan }, { name: 'id_item', label: 'Item RAPB', type: 'select', options: opsiItem(pilihan[0].v) }, { name: 'uraian', label: 'Barang / jasa yang dibeli', required: true, max: 150 }, { name: 'jumlah_perkiraan', label: 'Perkiraan nilai (Rp)', type: 'number', required: true }, { name: 'alasan', label: 'Alasan / kebutuhan', type: 'textarea', max: 300, required: true }, { name: 'darurat', label: 'Keadaan darurat (perbaikan mendesak yang tidak dapat menunggu rapat)', type: 'checkbox' }],
+      onOpen: (m) => { $('[name="pos"]', m).onchange = (e) => { $('[name="id_item"]', m).innerHTML = opsiItem(e.target.value).map((o) => '<option value="' + esc(o.v) + '">' + esc(o.l) + '</option>').join(''); }; },
+      onSubmit: async (v) => { const r = await api('pengadaanAjukan', { data: v }); toast('Pengadaan diajukan: ' + TINGKAT[r.tingkat] + '.', 'good'); ulang(); }
+    });
+  };
+  $$('[data-a]', root).forEach((b) => {
+    const p = cari(b.getAttribute('data-id')), a = b.getAttribute('data-a');
+    b.onclick = () => {
+      if (a === 'hapusw') return coba(() => api('pengadaanPenawaran', { id_pengadaan: p.id_pengadaan, hapus_id: b.getAttribute('data-w') })).then((ok) => ok && ulang());
+      if (a === 'tawar') return formModal({ title: 'Tambah penawaran', fields: [{ name: 'vendor', label: 'Nama penyedia / toko', required: true, max: 80 }, { name: 'harga', label: 'Harga penawaran (Rp)', type: 'number', required: true }, { name: 'catatan', label: 'Catatan', max: 150 }], onSubmit: async (v) => { await api('pengadaanPenawaran', Object.assign({ id_pengadaan: p.id_pengadaan }, v)); ulang(); } });
+      if (a === 'kirim') {
+        const opt = p.penawaran.map((w) => ({ v: w.vendor, l: w.vendor + ' - ' + rp(w.harga) }));
+        const perlu = (p.tingkat === '1' || p.tingkat === 'D') ? 0 : (PUB ? PUB.aturan.min_penawaran : 3);
+        return formModal({
+          title: 'Kirim untuk persetujuan', intro: p.penawaran.length ? 'Pilih penyedia. Penawaran termurah dianjurkan; bila memilih yang lebih mahal, isi alasan.' : 'Belum ada penawaran. ' + (perlu ? 'Tingkat ini butuh ' + perlu + ' penawaran atau alasan tertulis.' : 'Isi nama penyedia.'),
+          fields: [p.penawaran.length ? { name: 'vendor_terpilih', label: 'Penyedia terpilih', type: 'select', options: opt } : { name: 'vendor_terpilih', label: 'Nama penyedia', required: true, max: 80 }, { name: 'alasan_pilih', label: 'Alasan bukan penawaran termurah', hint: '(bila berlaku)', type: 'textarea', max: 250 }, { name: 'alasan_tunggal', label: 'Alasan penawaran kurang dari ' + (perlu || 3), hint: '(penyedia tunggal / darurat)', type: 'textarea', max: 250 }],
+          onSubmit: async (v) => { await api('pengadaanKirim', Object.assign({ id_pengadaan: p.id_pengadaan }, v)); toast('Dikirim untuk persetujuan.', 'good'); ulang(); }
+        });
+      }
+      if (a === 'setuju' || a === 'tolak') {
+        const set = a === 'setuju';
+        return formModal({ title: (set ? 'Setujui' : 'Tolak') + ' pengadaan', intro: esc(p.uraian) + ' - ' + rp(p.jumlah_perkiraan) + ' (' + TINGKAT[p.tingkat] + ')', submit: set ? 'Setujui' : 'Tolak',
+          fields: (set && p.perlu_ba ? [{ name: 'no_ba', label: 'Nomor / tanggal berita acara ' + p.perlu_ba, value: p.no_ba, required: !p.no_ba, max: 80 }] : []).concat([{ name: 'catatan', label: set ? 'Catatan' : 'Alasan penolakan', hint: set ? '(opsional)' : '', type: 'textarea', max: 250, required: !set }]),
+          onSubmit: async (v) => { const r = await api('pengadaanPutusan', { id_pengadaan: p.id_pengadaan, keputusan: set ? 'Setuju' : 'Tolak', catatan: v.catatan, no_ba: v.no_ba }); toast('Keputusan tersimpan. Status: ' + r.status + '.', 'good'); ulang(); } });
+      }
+      if (a === 'beli') return formModal({ title: 'Catat pembelian', intro: esc(p.uraian) + ' - perkiraan ' + rp(p.jumlah_perkiraan) + ', batas ' + rp(p.jumlah_perkiraan * 1.1), fields: [{ name: 'nilai_final', label: 'Nilai yang dibayar (Rp)', type: 'number', value: p.jumlah_perkiraan, required: true }, { name: 'tgl_beli', label: 'Tanggal pembelian', type: 'date', value: hariIniLokal() }, { name: 'penerima', label: 'Dibayarkan kepada', value: p.vendor_terpilih, max: 80 }, { name: 'nota', label: 'Foto nota / kuitansi (wajib)', type: 'file', help: 'Nota akan tampil publik agar warga dapat memeriksa.' }], onSubmit: async (v) => { if (!v.nota) throw new Error('Foto nota wajib diunggah.'); const f = await foto(v.nota); await api('pengadaanBeli', { id_pengadaan: p.id_pengadaan, nilai_final: Number(v.nilai_final), tgl_beli: v.tgl_beli, penerima: v.penerima, nota_b64: f.b64, nota_mime: f.mime }); toast('Pembelian tercatat dan masuk laporan publik.', 'good'); ulang(); } });
+      if (a === 'batal') return formModal({ title: 'Batalkan pengadaan', fields: [{ name: 'alasan', label: 'Alasan', type: 'textarea', max: 150, required: true }], submit: 'Batalkan', onSubmit: async (v) => { await api('pengadaanBatal', { id_pengadaan: p.id_pengadaan, alasan: v.alasan }); ulang(); } });
+    };
+  });
+};
+
+/* ---------- pengeluaran langsung ---------- */
+V.pengeluaran = async (root) => {
+  const [l, pos, rb] = await Promise.all([api('keluarList', {}), api('posList', {}), api('rapbList', {})]);
+  const nm = (k) => posNamaDari(pos, k);
+  root.innerHTML = judul('Pengeluaran', 'Seluruh pengeluaran kas. Belanja di atas batas Tingkat 1 harus melalui menu Pengadaan.', R('bendahara') ? '<button class="btn pri" id="kbBaru">Catat pengeluaran langsung</button>' : '') +
+    tableHTML([{ h: 'Tanggal', cls: 'nw', f: (r) => tglID(r.tanggal) }, { h: 'Pos', f: (r) => esc(nm(r.pos)) }, { h: 'Uraian', f: (r) => esc(r.uraian) + (r.id_pengadaan ? ' <span class="chip info">Pengadaan</span>' : '') }, { h: 'Penerima', k: 'penerima' }, { h: 'Jumlah', cls: 'r num', f: (r) => rp(r.jumlah) }, { h: 'Nota', f: (r) => btnBukti(r.bukti) }, { h: 'Status', f: (r) => chip(r.status) }, { h: '', f: (r) => (r.status === 'Menunggu' && R('ketua') && r.dicatat_oleh !== SESI.profil.id ? '<div class="row" style="gap:6px;flex-wrap:nowrap"><button class="btn sm ok" data-set="' + r.id_keluar + '">Setujui</button><button class="btn sm bad" data-tol="' + r.id_keluar + '">Tolak</button></div>' : '') }], l, { empty: 'Belum ada pengeluaran.' });
+  ikatBukti(root);
+  $$('[data-set]', root).forEach((b) => { b.onclick = async () => { if (await coba(() => api('keluarPutusan', { id_keluar: b.getAttribute('data-set'), keputusan: 'Setuju' }), 'Pengeluaran disetujui.')) V.pengeluaran(root); }; });
+  $$('[data-tol]', root).forEach((b) => { b.onclick = () => formModal({ title: 'Tolak pengeluaran', fields: [{ name: 'catatan', label: 'Alasan penolakan', type: 'textarea', max: 150, required: true }], submit: 'Tolak', onSubmit: async (v) => { await api('keluarPutusan', { id_keluar: b.getAttribute('data-tol'), keputusan: 'Tolak', catatan: v.catatan }); DASHT = 0; V.pengeluaran(root); } }); });
+  const bb = $('#kbBaru', root);
+  if (bb) bb.onclick = () => {
+    const pilihan = selPos(pos, true), opsi = (kode) => rb.item.filter((i) => i.pos === kode).map((i) => ({ v: i.id_item, l: i.uraian + ' - sisa ' + rp(i.sisa) + (i.sifat === 'Rutin' ? ' (rutin)' : '') }));
+    formModal({
+      title: 'Catat pengeluaran langsung', intro: 'Hanya untuk belanja dalam batas Tingkat 1 atau belanja rutin. Menunggu persetujuan Ketua.',
+      fields: [{ name: 'pos', label: 'Pos anggaran', type: 'select', options: pilihan }, { name: 'id_item', label: 'Item RAPB', type: 'select', options: opsi(pilihan[0].v) }, { name: 'tanggal', label: 'Tanggal transaksi', type: 'date', value: hariIniLokal() }, { name: 'uraian', label: 'Uraian', required: true, max: 150 }, { name: 'jumlah', label: 'Jumlah (Rp)', type: 'number', required: true }, { name: 'penerima', label: 'Dibayarkan kepada', required: true, max: 80 }, { name: 'nota', label: 'Foto nota / kuitansi (wajib)', type: 'file' }],
+      onOpen: (m) => { $('[name="pos"]', m).onchange = (e) => { $('[name="id_item"]', m).innerHTML = opsi(e.target.value).map((o) => '<option value="' + esc(o.v) + '">' + esc(o.l) + '</option>').join(''); }; },
+      onSubmit: async (v) => { if (!v.nota) throw new Error('Foto nota wajib diunggah.'); const f = await foto(v.nota); const d = Object.assign({}, v); delete d.nota; d.bukti_b64 = f.b64; d.bukti_mime = f.mime; await api('keluarCatat', { data: d }); toast('Tercatat, menunggu persetujuan Ketua.', 'good'); DASHT = 0; V.pengeluaran(root); }
+    });
+  };
+};
+
+/* ---------- pendapatan lain ---------- */
+V.lain = async (root) => {
+  const [l, pos] = await Promise.all([api('pendapatanLainList', {}), api('posList', {})]);
+  root.innerHTML = judul('Pendapatan lain', 'Di luar IPL: sewa fasilitas, donasi, bunga bank, dan sebagainya.', R('bendahara') ? '<button class="btn pri" id="plBaru">Catat pendapatan</button>' : '') +
+    tableHTML([{ h: 'Tanggal', cls: 'nw', f: (r) => tglID(r.tanggal) }, { h: 'Sumber', k: 'sumber' }, { h: 'Uraian', k: 'uraian' }, { h: 'Pos', f: (r) => esc(posNamaDari(pos, r.pos)) }, { h: 'Jumlah', cls: 'r num', f: (r) => rp(r.jumlah) }, { h: 'Bukti', f: (r) => btnBukti(r.bukti) }], l, { empty: 'Belum ada pendapatan lain.' });
+  ikatBukti(root);
+  const b = $('#plBaru', root);
+  if (b) b.onclick = () => formModal({ title: 'Catat pendapatan lain', fields: [{ name: 'tanggal', label: 'Tanggal', type: 'date', value: hariIniLokal() }, { name: 'sumber', label: 'Sumber', required: true, max: 80 }, { name: 'uraian', label: 'Uraian', required: true, max: 150 }, { name: 'pos', label: 'Masuk ke pos', type: 'select', options: selPos(pos, false), value: 'CU' }, { name: 'jumlah', label: 'Jumlah (Rp)', type: 'number', required: true }, { name: 'bukti', label: 'Foto bukti', hint: '(disarankan)', type: 'file' }], onSubmit: async (v) => { const f = v.bukti ? await foto(v.bukti) : null; const d = Object.assign({}, v); delete d.bukti; if (f) { d.bukti_b64 = f.b64; d.bukti_mime = f.mime; } await api('pendapatanLainSimpan', { data: d }); toast('Pendapatan dicatat.', 'good'); V.lain(root); } });
+};
+
+/* ---------- Dana RT ---------- */
+let DR_TAHUN = '';
+V.danart = async (root) => {
+  const l = await api('danaRTList', { tahun: DR_TAHUN || undefined }); const thn = DR_TAHUN || (l[0] ? l[0].periode.slice(0, 4) : String(new Date().getFullYear()));
+  const b = R('bendahara');
+  root.innerHTML = judul('Dana RT', 'Dihitung dari IPL yang diterima bulan sebelumnya × porsi RT; 40% dibagi rata, 60% menurut jumlah KK.', b ? '<button class="btn" id="drHitung">Hitung bulan ini</button><button class="btn pri" id="drSalur">Salurkan yang dipilih</button>' : '') +
+    '<div class="filters"><div><label class="f" for="drThn">Tahun</label><input type="number" id="drThn" value="' + thn + '" style="width:110px"></div></div>' +
+    tableHTML([{ h: b ? '' : 'x', f: (r) => (b && r.status === 'Terjadwal' ? '<input type="checkbox" data-pilih="' + r.id + '" aria-label="Pilih ' + r.rt + ' ' + r.periode + '">' : '') }, { h: 'Bulan', cls: 'nw', f: (r) => blnID(r.periode) }, { h: 'RT', k: 'rt' }, { h: 'Bagian rata', cls: 'r num', f: (r) => rp(r.dasar) }, { h: 'Bagian menurut KK', cls: 'r num', f: (r) => rp(r.proporsional) }, { h: 'Jumlah', cls: 'r num', f: (r) => rp(r.jumlah) }, { h: 'Status', f: (r) => chip(r.status) }, { h: 'Tgl salur', cls: 'nw', f: (r) => tglID(r.tgl_salur) }, { h: 'Referensi', k: 'ref' }].filter((c) => c.h !== 'x'), l, { empty: 'Belum ada perhitungan Dana RT tahun ini.' });
+  $('#drThn', root).onchange = (e) => { DR_TAHUN = e.target.value; V.danart(root); };
+  if (!b) return;
+  $('#drHitung', root).onclick = () => formModal({ title: 'Hitung Dana RT', intro: 'Perhitungan diulang untuk baris yang belum disalurkan. Dasar: IPL yang diterima pada bulan sebelumnya.', fields: [{ name: 'periode', label: 'Untuk bulan', type: 'month', value: hariIniLokal().slice(0, 7) }], submit: 'Hitung', onSubmit: async (v) => { const r = await api('danaRTHitung', { periode: v.periode }); toast('Dihitung: IPL bulan lalu ' + rp(r.ipl_bulan_lalu) + ', dana dibagi ' + rp(r.pool) + '.', 'good'); DASHT = 0; V.danart(root); } });
+  $('#drSalur', root).onclick = () => {
+    const ids = $$('[data-pilih]:checked', root).map((c) => c.getAttribute('data-pilih'));
+    if (!ids.length) return toast('Centang baris yang akan disalurkan.', 'bad');
+    formModal({ title: 'Salurkan Dana RT', intro: ids.length + ' baris dipilih.', fields: [{ name: 'tgl_salur', label: 'Tanggal transfer', type: 'date', value: hariIniLokal() }, { name: 'ref', label: 'Referensi transfer', hint: '(opsional)', max: 80 }], submit: 'Tandai disalurkan', onSubmit: async (v) => { const r = await api('danaRTSalur', { ids: ids, tgl_salur: v.tgl_salur, ref: v.ref }); toast(r.disalurkan + ' baris ditandai disalurkan.', 'good'); DASHT = 0; V.danart(root); } });
+  };
+};
+
+/* ---------- LPJ RT ---------- */
+V.lpj = async (root) => {
+  const l = await api('lpjList', {}), me = SESI.profil.role, th = new Date().getFullYear();
+  root.innerHTML = judul('LPJ Dana RT', 'Laporan pertanggungjawaban penggunaan Dana RT tiap triwulan.', me === 'ketua_rt' ? '<button class="btn pri" id="lpBaru">Kirim LPJ triwulan</button>' : '') +
+    tableHTML([{ h: 'Triwulan', k: 'periode', cls: 'nw' }, { h: 'RT', k: 'rt' }, { h: 'Diterima', cls: 'r num', f: (r) => rp(r.dana_diterima) }, { h: 'Sosial', cls: 'r num', f: (r) => rp(r.sosial) }, { h: 'Keamanan', cls: 'r num', f: (r) => rp(r.keamanan) }, { h: 'Admin', cls: 'r num', f: (r) => rp(r.admin) }, { h: 'Insentif', cls: 'r num', f: (r) => rp(r.insentif) }, { h: 'Status', f: (r) => chip(r.status) + (r.catatan_proses ? '<div class="small muted">' + esc(r.catatan_proses) + '</div>' : '') + (r.peringatan.length ? '<div class="small" style="color:var(--warn-ink)">' + r.peringatan.map((w) => '! ' + esc(w)).join('<br>') + '</div>' : '') }, { h: 'Bukti', f: (r) => btnBukti(r.bukti) }, { h: '', f: (r) => (r.status === 'Dikirim' && R('bendahara', 'ketua', 'dewas') ? '<div class="row" style="gap:6px;flex-wrap:nowrap"><button class="btn sm ok" data-lt="' + r.id + '">Terima</button><button class="btn sm bad" data-lp="' + r.id + '">Perbaikan</button></div>' : '') }], l, { empty: 'Belum ada LPJ.' });
+  ikatBukti(root);
+  $$('[data-lt]', root).forEach((b) => { b.onclick = async () => { if (await coba(() => api('lpjProses', { id: b.getAttribute('data-lt'), keputusan: 'Terima' }), 'LPJ diterima.')) V.lpj(root); }; });
+  $$('[data-lp]', root).forEach((b) => { b.onclick = () => formModal({ title: 'Minta perbaikan LPJ', fields: [{ name: 'c', label: 'Catatan perbaikan', type: 'textarea', max: 200, required: true }], submit: 'Kirim', onSubmit: async (v) => { await api('lpjProses', { id: b.getAttribute('data-lp'), keputusan: 'Perbaiki', catatan_proses: v.c }); DASHT = 0; V.lpj(root); } }); });
+  const nb = $('#lpBaru', root);
+  if (nb) nb.onclick = () => {
+    const bulanIni = hariIniLokal().slice(0, 7), tw = [];
+    for (let q = 1; q <= 4; q++) { const akhir = th + '-' + ('0' + (q * 3)).slice(-2); if (akhir <= bulanIni) tw.push(th + '-T' + q); }
+    if (!tw.length) return toast('Belum ada triwulan yang dapat dilaporkan.', 'bad');
+    formModal({ title: 'Kirim LPJ', intro: 'Isi penggunaan Dana RT yang Anda terima pada triwulan tersebut. Komposisi ideal menurut ART: sosial ≥ 35%, keamanan & kebersihan 20-30%, administrasi 5-15%, insentif ≤ 20%.', fields: [{ name: 'periode', label: 'Triwulan', type: 'select', options: tw, value: tw[tw.length - 1] }, { name: 'sosial', label: 'Kegiatan sosial (Rp)', type: 'number', value: 0 }, { name: 'keamanan', label: 'Keamanan & kebersihan (Rp)', type: 'number', value: 0 }, { name: 'admin', label: 'Operasional administrasi (Rp)', type: 'number', value: 0 }, { name: 'insentif', label: 'Insentif pengurus RT (Rp)', type: 'number', value: 0 }, { name: 'catatan', label: 'Catatan', type: 'textarea', max: 300 }, { name: 'bukti', label: 'Foto rekap / bukti', hint: '(opsional)', type: 'file' }],
+      onSubmit: async (v) => { const f = v.bukti ? await foto(v.bukti) : null; const d = Object.assign({}, v); delete d.bukti; if (f) { d.bukti_b64 = f.b64; d.bukti_mime = f.mime; } const r = await api('lpjKirim', { data: d }); toast('LPJ terkirim.' + (r.peringatan.length ? ' Catatan komposisi: ' + r.peringatan.join(' ') : ''), r.peringatan.length ? '' : 'good'); DASHT = 0; V.lpj(root); } });
+  };
+};
+
+/* ================================================================
+   RUANG KERJA - pengumuman, laporan, pemeriksaan, pengguna, pengaturan, audit
+   ================================================================ */
+V.pengumuman = async (root) => {
+  const l = await api('pengumumanList', {}), edit = R('ketua', 'sekretaris', 'bendahara', 'admin');
+  const KAT = ['Umum', 'Rapat', 'Tagihan', 'Laporan', 'Kegiatan', 'Darurat'];
+  const form = (a) => [{ name: 'judul', label: 'Judul', value: a.judul || '', required: true, max: 120 }, { name: 'kategori', label: 'Kategori', type: 'select', options: KAT, value: a.kategori || 'Umum' }, { name: 'isi', label: 'Isi pengumuman', type: 'textarea', value: a.isi || '', max: 1500, required: true }, { name: 'tanggal', label: 'Tanggal', type: 'date', value: a.tanggal || hariIniLokal() }, { name: 'tampil_sampai', label: 'Tampilkan sampai', hint: '(opsional)', type: 'date', value: a.tampil_sampai || '' }, { name: 'tautan', label: 'Tautan', hint: '(opsional, diawali https://)', value: a.tautan || '', max: 300 }, { name: 'sematkan', label: 'Sematkan di halaman utama', type: 'checkbox', value: a.sematkan === 'Ya' }];
+  root.innerHTML = judul('Pengumuman', 'Tampil di halaman publik dan portal warga. Tidak ada pesan otomatis; warga membaca pengumuman di halaman ini.', edit ? '<button class="btn pri" id="anBaru">Buat pengumuman</button>' : '') +
+    tableHTML([{ h: 'Tanggal', cls: 'nw', f: (r) => tglID(r.tanggal) }, { h: 'Kategori', f: (r) => '<span class="chip ' + (r.kategori === 'Darurat' ? 'bad' : 'info') + '">' + esc(r.kategori) + '</span>' }, { h: 'Judul', f: (r) => esc(r.judul) + (r.sematkan === 'Ya' ? ' <span class="chip">Disematkan</span>' : '') }, { h: 'Sampai', cls: 'nw', f: (r) => tglID(r.tampil_sampai) }, { h: '', f: (r) => (edit ? '<div class="row" style="gap:6px;flex-wrap:nowrap"><button class="btn sm" data-ub="' + r.id + '">Ubah</button><button class="btn sm bad" data-hp="' + r.id + '">Hapus</button></div>' : '') }], l, { empty: 'Belum ada pengumuman.' });
+  const bar = $('#anBaru', root);
+  if (bar) bar.onclick = () => formModal({ title: 'Buat pengumuman', wide: true, fields: form({}), onSubmit: async (v) => { await api('pengumumanSimpan', { data: v }); PUB = null; toast('Pengumuman diterbitkan.', 'good'); V.pengumuman(root); } });
+  $$('[data-ub]', root).forEach((b) => { b.onclick = () => { const a = l.filter((x) => x.id === b.getAttribute('data-ub'))[0]; formModal({ title: 'Ubah pengumuman', wide: true, fields: form(a), onSubmit: async (v) => { await api('pengumumanSimpan', { data: Object.assign({ id: a.id }, v) }); PUB = null; toast('Disimpan.', 'good'); V.pengumuman(root); } }); }; });
+  $$('[data-hp]', root).forEach((b) => { b.onclick = async () => { if (await konfirmasi('Hapus pengumuman', 'Hapus pengumuman ini dari halaman publik?', 'Hapus', 'bad')) { if (await coba(() => api('pengumumanHapus', { id: b.getAttribute('data-hp') }), 'Dihapus.')) { PUB = null; V.pengumuman(root); } } }; });
+};
+
+let LP_PER = '';
+V.laporan = async (root) => {
+  if (!LP_PER) { const t = hariIniLokal(), y = Number(t.slice(0, 4)), m = Number(t.slice(5, 7)); LP_PER = m === 1 ? (y - 1) + '-12' : y + '-' + ('0' + (m - 1)).slice(-2); }
+  if (!PUB) { try { await muatPublik(); } catch (e) { /* nama pos jatuh ke kode */ } }
+  const d = await api('laporanPratinjau', { periode: LP_PER }), sn = d.snapshot;
+  root.innerHTML = judul('Laporan bulanan', 'Pratinjau dihitung dari data terkini. Setelah diterbitkan, laporan tampil di halaman publik dan menjadi arsip.') +
+    '<div class="filters"><div><label class="f" for="lpPer">Bulan laporan</label><input type="month" id="lpPer" value="' + LP_PER + '"></div><div>' + (d.terbit ? '<span class="chip good"><span aria-hidden="true">✓</span>Sudah terbit</span>' : '<span class="chip warn"><span aria-hidden="true">!</span>Belum terbit</span>') + '</div>' +
+    '<div class="row" style="gap:8px"><button class="btn" id="lpWa">Salin teks WhatsApp</button><button class="btn" id="lpCetak">Cetak</button>' + (R('bendahara', 'ketua') ? '<button class="btn pri" id="lpTerbit">' + (d.terbit ? 'Terbitkan ulang' : 'Terbitkan laporan') + '</button>' : '') + '</div></div>' +
+    '<div class="card">' + laporanBody({ data: sn, catatan: '' }) + '</div>';
+  $('#lpPer', root).onchange = (e) => { if (e.target.value) { LP_PER = e.target.value; V.laporan(root); } };
+  $('#lpWa', root).onclick = () => salinTeks(d.teks_wa);
+  $('#lpCetak', root).onclick = cetak;
+  const t = $('#lpTerbit', root);
+  if (t) t.onclick = () => formModal({ title: 'Terbitkan laporan ' + blnID(LP_PER), intro: 'Laporan akan tampil untuk seluruh warga di halaman publik, dan pengumuman otomatis dibuat.', fields: [{ name: 'catatan', label: 'Catatan Bendahara', hint: '(opsional)', type: 'textarea', max: 300 }], submit: 'Terbitkan', onSubmit: async (v) => { await api('laporanTerbit', { periode: LP_PER, catatan: v.catatan }); PUB = null; toast('Laporan diterbitkan.', 'good'); DASHT = 0; V.laporan(root); } });
+};
+
+V.pemeriksaan = async (root) => {
+  const p = await api('publicData', {}), th = new Date().getFullYear();
+  const tw = []; for (let y = th; y >= th - 1; y--) for (let q = 4; q >= 1; q--) tw.push(y + '-T' + q);
+  root.innerHTML = judul('Pemeriksaan Dewan Pengawas', 'Hasil pemeriksaan tampil di halaman publik.', '<button class="btn pri" id="pkBaru">Catat hasil pemeriksaan</button>') +
+    tableHTML([{ h: 'Periode', k: 'periode' }, { h: 'Tanggal', cls: 'nw', f: (r) => tglID(r.tanggal) }, { h: 'Pemeriksa', k: 'dewas' }, { h: 'Opini', f: (r) => chip(r.opini) }, { h: 'Catatan', k: 'catatan' }], p.pemeriksaan, { empty: 'Belum ada pemeriksaan.' });
+  $('#pkBaru', root).onclick = () => formModal({ title: 'Catat hasil pemeriksaan', fields: [{ name: 'periode', label: 'Periode diperiksa', type: 'select', options: tw }, { name: 'opini', label: 'Opini', type: 'select', options: ['Wajar', 'Wajar dengan catatan', 'Perlu perbaikan'] }, { name: 'catatan', label: 'Catatan dan temuan', type: 'textarea', max: 800, required: true }], onSubmit: async (v) => { await api('periksaSimpan', { data: v }); PUB = null; toast('Hasil pemeriksaan dicatat.', 'good'); V.pemeriksaan(root); } });
+};
+
+function pinPenggunaModal(username, pin, judulM) {
+  openModal({ title: judulM, body: '<div class="note warn" style="margin:12px 0"><span aria-hidden="true">!</span><div>PIN hanya ditampilkan sekali. Sampaikan langsung kepada yang bersangkutan; wajib diganti saat masuk pertama.</div></div><div class="kartu">Nama pengguna: <b>' + esc(username) + '</b><br>PIN sementara: <b class="num" style="font-size:20px;letter-spacing:.1em">' + esc(pin) + '</b></div>', actions: [{ label: 'Selesai', kind: 'pri', onClick: () => true }] });
+}
+V.pengguna = async (root) => {
+  const l = await api('userList', {});
+  const form = (u) => [{ name: 'username', label: 'Nama pengguna', value: u.username || '', required: true, max: 30, help: 'Huruf kecil, angka, titik, garis bawah. Contoh: bendahara1', autocomplete: 'off' }, { name: 'nama', label: 'Nama lengkap', value: u.nama || '', required: true, max: 80 }, { name: 'role', label: 'Peran', type: 'select', options: Object.keys(PERAN).map((k) => ({ v: k, l: PERAN[k] })), value: u.role || 'bendahara' }, { name: 'jabatan', label: 'Jabatan', hint: '(opsional)', value: u.jabatan || '', max: 60 }, { name: 'rt', label: 'RT (khusus Pengurus RT)', value: u.rt || '', max: 10, placeholder: 'RT01' }].concat(u.username ? [{ name: 'aktif', label: 'Akun aktif', type: 'checkbox', value: u.aktif !== 'Tidak' }] : []);
+  root.innerHTML = judul('Pengguna pengurus', 'Akun untuk Pengurus Paguyuban, Pengurus RT, dan Dewan Pengawas. Satu orang, satu akun.', '<button class="btn pri" id="ugBaru">Tambah pengguna</button>') +
+    tableHTML([{ h: 'Nama pengguna', k: 'username' }, { h: 'Nama', k: 'nama' }, { h: 'Peran', f: (r) => esc(PERAN[r.role] || r.role) + (r.rt ? ' ' + esc(r.rt) : '') }, { h: 'Jabatan', k: 'jabatan' }, { h: 'Status', f: (r) => (r.aktif === 'Ya' ? '<span class="chip good"><span aria-hidden="true">✓</span>Aktif</span>' : '<span class="chip">Nonaktif</span>') + (r.wajib_ganti_pin === 'Ya' ? ' <span class="chip warn">PIN awal</span>' : '') }, { h: '', f: (r) => '<div class="row" style="gap:6px;flex-wrap:nowrap"><button class="btn sm" data-ub="' + esc(r.username) + '">Ubah</button><button class="btn sm" data-rp="' + esc(r.username) + '">Reset PIN</button></div>' }], l, { empty: 'Belum ada pengguna.' });
+  $('#ugBaru', root).onclick = () => formModal({ title: 'Tambah pengguna', fields: form({}), onSubmit: async (v) => { const r = await api('userSimpan', { data: v }); V.pengguna(root); pinPenggunaModal(r.username, r.pin, 'Pengguna ditambahkan'); return false; } });
+  $$('[data-ub]', root).forEach((b) => { b.onclick = () => { const u = l.filter((x) => x.username === b.getAttribute('data-ub'))[0]; formModal({ title: 'Ubah ' + u.username, fields: form(u).filter((f) => f.name !== 'username'), onSubmit: async (v) => { await api('userSimpan', { data: Object.assign({ username: u.username }, v) }); toast('Disimpan.', 'good'); V.pengguna(root); } }); }; });
+  $$('[data-rp]', root).forEach((b) => { b.onclick = async () => { const u = b.getAttribute('data-rp'); if (await konfirmasi('Reset PIN', 'Buat PIN sementara baru untuk ' + u + '?', 'Reset PIN')) { const r = await coba(() => api('userResetPin', { username: u })); if (r) { V.pengguna(root); pinPenggunaModal(u, r.pin, 'PIN baru'); } } }; });
+};
+
+const PENGATURAN_INFO = [
+  ['NAMA_PAGUYUBAN', 'Nama paguyuban', 'text'], ['ALAMAT', 'Alamat sekretariat', 'text'], ['TAHUN_ANGGARAN', 'Tahun anggaran berjalan', 'number'],
+  ['TARIF_IPL_DEFAULT', 'Tarif IPL standar per KK per bulan (Rp)', 'number'], ['JATUH_TEMPO_TGL', 'Tanggal jatuh tempo tiap bulan (1-28)', 'number'],
+  ['SALDO_AWAL', 'Saldo kas awal saat mulai memakai sistem (Rp)', 'number', 'Jangan diubah setelah transaksi berjalan.'],
+  ['REKENING_INFO', 'Info rekening pembayaran (tampil di portal warga)', 'text'], ['KONTAK_BENDAHARA', 'Kontak Bendahara', 'text'],
+  ['BATAS_T1_PERSEN', 'Batas Tingkat 1 (% dari total RAPB)', 'number'], ['BATAS_T2_PERSEN', 'Batas Tingkat 2 (%)', 'number'], ['BATAS_T3_PERSEN', 'Batas Tingkat 3 (%)', 'number'],
+  ['MIN_PENAWARAN', 'Minimal jumlah penawaran (Tingkat 2 ke atas)', 'number'], ['TOLERANSI_NILAI_FINAL', 'Toleransi nilai beli terhadap perkiraan (%)', 'number'],
+  ['DANA_RT_DASAR_PERSEN', 'Dana RT: porsi dibagi rata (%)', 'number'], ['DANA_RT_PROP_PERSEN', 'Dana RT: porsi menurut jumlah KK (%)', 'number', 'Bersama porsi dibagi rata harus berjumlah 100.'],
+  ['TAMPILKAN_VENDOR', 'Tampilkan nama penerima/penyedia di halaman publik', 'select']
+];
+V.pengaturan = async (root) => {
+  const c = await api('pengaturanGet', {});
+  const fs = PENGATURAN_INFO.map((p) => ({ name: p[0], label: p[1], type: p[2] === 'select' ? 'select' : (p[2] === 'number' ? 'number' : 'text'), options: ['Ya', 'Tidak'], value: c[p[0]], help: p[3], max: 300 }));
+  root.innerHTML = judul('Pengaturan') + '<div class="card" style="max-width:640px">' + fieldsHTML(fs) + '<div class="err hide" id="pgErr"></div><div style="margin-top:16px"><button class="btn pri" id="pgSimpan">Simpan pengaturan</button></div></div>';
+  $('#pgSimpan', root).onclick = async () => {
+    const v = readForm(root, fs);
+    try { await api('pengaturanSimpan', { values: v }); PUB = null; DASHT = 0; toast('Pengaturan disimpan.', 'good'); } catch (e) { const er = $('#pgErr', root); er.textContent = e.message; er.classList.remove('hide'); }
+  };
+};
+
+V.audit = async (root) => {
+  const l = await api('auditList', {});
+  root.innerHTML = judul('Jejak audit', '300 aktivitas terakhir. Semua perubahan data tercatat siapa, kapan, dan apa. PIN tidak pernah dicatat.') +
+    tableHTML([{ h: 'Waktu', cls: 'nw', k: 'waktu' }, { h: 'Pelaku', k: 'pelaku' }, { h: 'Aksi', k: 'aksi' }, { h: 'Rincian', k: 'detail' }], l, { empty: 'Belum ada aktivitas.' });
+};
+
+/* ================================================================
+   ROUTER & INISIALISASI
+   ================================================================ */
+function route() {
+  const seg = location.hash.replace(/^#\/?/, '').split('/');
+  if (API_URL.indexOf('GANTI_') === 0) {
+    $('#app').innerHTML = '<div class="card loginbox" style="max-width:560px"><h2>Halaman belum terhubung ke Google Sheets</h2><p class="t2">Buka berkas <b>index.html</b>, cari baris <code>const API_URL</code> (sekitar baris 206), lalu ganti dengan URL Web App Apps Script Anda (berakhiran <code>/exec</code>). Ikuti panduan pemasangan langkah 6.</p></div>';
+    return;
+  }
+  if ((seg[0] === 'staf' || seg[0] === 'warga') && !PUB) muatPublik().catch(() => { /* nama tetap default */ });
+  if (seg[0] === 'staf') tampilStaf(seg[1]);
+  else if (seg[0] === 'warga') tampilWarga();
+  else tampilPublik(seg[0] || '');
+}
+window.addEventListener('hashchange', () => { closeModal(); window.scrollTo(0, 0); route(); });
+renderAkun();
+route();
+</script>
+</body>
+</html>
